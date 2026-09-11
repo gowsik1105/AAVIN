@@ -1,0 +1,170 @@
+/* ==========================================================================
+   AAVIN SANGAM (ஆவின் சங்கம்)
+   Responsive & Adaptive Media Queries - Mobile App Ergonomics
+   ========================================================================== */
+
+/* Grid utilities */
+.grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+.grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.grid-4 {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+/* Map Layout Grid */
+.map-layout-grid {
+  display: grid;
+  grid-template-columns: 320px 1fr 340px;
+  gap: 18px;
+  align-items: start;
+}
+
+@media (max-width: 1024px) {
+  .map-layout-grid {
+    grid-template-columns: 300px 1fr;
+  }
+  #dairyDetailContainer {
+    grid-column: 1 / -1;
+  }
+  .grid-4 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .main-wrapper {
+    padding: 12px;
+    padding-bottom: 84px; /* Clearance for bottom navigation bar */
+  }
+
+  .grid-2, .grid-3, .grid-4 {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .map-layout-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  #aavinLeafletMap {
+    height: 360px !important;
+  }
+
+  .header-search-wrap {
+    display: none;
+  }
+
+  .desktop-nav-bar {
+    display: none;
+  }
+
+  .brand-title-wrap .sub-title {
+    display: none;
+  }
+
+  .location-ribbon {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+/* Desktop Styles */
+@media (min-width: 769px) {
+  .header-search-wrap {
+    display: block;
+    flex: 1;
+    max-width: 320px;
+  }
+
+  .desktop-nav-bar {
+    display: block;
+    background: #ffffff;
+    border-top: 1px solid var(--border-subtle);
+    padding: 6px 16px;
+  }
+
+  .bottom-nav {
+    display: none;
+  }
+
+  .desktop-nav-links {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    overflow-x: auto;
+  }
+
+  .desktop-nav-link {
+    text-decoration: none;
+    color: var(--text-secondary);
+    font-size: var(--font-sm);
+    font-weight: 700;
+    padding: 6px 12px;
+    border-radius: var(--radius-sm);
+    transition: all var(--transition-fast);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .desktop-nav-link:hover, .desktop-nav-link.active {
+    color: var(--aavin-primary);
+    background-color: var(--aavin-primary-light);
+  }
+
+  .admin-layout {
+    display: grid;
+    grid-template-columns: 240px 1fr;
+    gap: 20px;
+    align-items: start;
+  }
+
+  .admin-sidebar {
+    background: white;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    padding: 16px;
+    position: sticky;
+    top: 80px;
+  }
+
+  .admin-nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: var(--radius-md);
+    color: var(--text-secondary);
+    font-size: var(--font-sm);
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    background: transparent;
+    width: 100%;
+    text-align: left;
+    transition: all var(--transition-fast);
+  }
+
+  .admin-nav-item:hover {
+    background-color: var(--bg-muted);
+    color: var(--aavin-primary);
+  }
+
+  .admin-nav-item.active {
+    background-color: var(--aavin-primary-light);
+    color: var(--aavin-primary);
+    font-weight: 700;
+  }
+}

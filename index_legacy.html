@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="ta">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Aavin Sangam | ஆவின் சங்கம் | Govt of Tamil Nadu</title>
+  <meta name="description" content="Official government-purpose digital platform connecting Aavin dairy members, Sangam administrators, district officers, and Tamil Nadu government officials." />
+
+  <!-- Google Fonts: Inter & Noto Sans Tamil -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+Tamil:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Leaflet Map CSS for Aavin Main Dairy Finder -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+
+  <!-- Core Stylesheets -->
+  <link rel="stylesheet" href="css/design-system.css" />
+  <link rel="stylesheet" href="css/components.css" />
+  <link rel="stylesheet" href="css/responsive.css" />
+</head>
+<body>
+
+  <!-- Top Government Ribbon -->
+  <div class="gov-top-ribbon">
+    <div class="gov-emblem-text">
+      <span>🏛️</span>
+      <span>GOVERNMENT OF TAMIL NADU • தமிழ்நாடு அரசு</span>
+    </div>
+    <div class="gov-ribbon-actions">
+      <div class="network-status-badge online" id="globalNetworkBadge">
+        <span class="network-dot"></span>
+        <span id="networkText">Online</span>
+      </div>
+      <span style="opacity: 0.5;">|</span>
+      <span style="font-size: 11px;">Toll-Free: 1800-425-4422</span>
+    </div>
+  </div>
+
+  <!-- Main Sticky App Header -->
+  <header class="app-header">
+    <div class="header-container">
+      <!-- Brand & Emblems -->
+      <div class="brand-section" onclick="window.AAVIN_APP.navigate('home')">
+        <div class="brand-logo-badge">
+          🥛
+        </div>
+        <div class="brand-title-wrap">
+          <h1 id="headerAppTitle">ஆவின் சங்கம்</h1>
+          <div class="sub-title" id="headerAppSubTitle">தமிழ்நாடு அரசு • பால்வளத்துறை</div>
+        </div>
+      </div>
+
+      <!-- Universal Search Field (Desktop & Tablet) -->
+      <div class="header-search-wrap">
+        <div style="position: relative;">
+          <input 
+            type="text" 
+            id="globalSearchInput" 
+            placeholder="தேடுங்கள் (உறுப்பினர், சங்கம், புகார் எண்...)" 
+            style="width: 100%; padding: 7px 12px 7px 32px; border-radius: var(--radius-full); border: 1px solid var(--border-strong); font-size: 13px; background: var(--bg-muted); outline: none;"
+            onkeydown="if(event.key==='Enter') window.AAVIN_APP.triggerSearch(this.value)"
+          />
+          <span style="position: absolute; left: 10px; top: 7px; font-size: 14px; color: var(--text-muted);">🔍</span>
+        </div>
+      </div>
+
+      <!-- Header Controls: Role Switcher, Bilingual Toggle, Notifications -->
+      <div style="display: flex; align-items: center; gap: 10px;">
+        
+        <!-- Interactive Role Switcher (Member, Sangam Admin, District Admin, State Admin) -->
+        <div class="role-badge-selector">
+          <span style="font-size: 13px;">👤</span>
+          <select id="globalRoleSelector" class="role-select" onchange="window.AAVIN_APP.handleRoleChange(this.value)">
+            <option value="member">உறுப்பினர் (Member - Madurai)</option>
+            <option value="sangam_admin">சங்க நிர்வாகி (Sangam Admin)</option>
+            <option value="district_admin">மாவட்ட நிர்வாகி (District Admin)</option>
+            <option value="state_admin">மாநில அரசு நிர்வாகி (State Admin)</option>
+          </select>
+        </div>
+
+        <!-- Bilingual Switcher: English | தமிழ் -->
+        <button id="langToggleBtn" class="lang-toggle-btn" onclick="window.AAVIN_APP.toggleLanguage()" title="Switch Language">
+          English
+        </button>
+
+        <!-- Notification Bell -->
+        <button class="btn btn-secondary btn-sm" style="position: relative; padding: 6px 10px; border-radius: var(--radius-full);" onclick="window.AAVIN_APP.showNotifications()" title="Notifications">
+          <span>🔔</span>
+          <span style="position: absolute; top: -3px; right: -3px; background: #dc2626; color: white; border-radius: 50%; width: 16px; height: 16px; font-size: 10px; font-weight: 700; display: flex; align-items: center; justify-content: center;">
+            3
+          </span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Desktop Sub Navigation Links -->
+    <div class="desktop-nav-bar">
+      <div class="desktop-nav-links" id="desktopNavLinks" style="max-width: 1240px; margin: 0 auto;"></div>
+    </div>
+  </header>
+
+  <!-- Main Application Workspace Shell -->
+  <main class="main-wrapper">
+    <div id="mainContentArea">
+      <!-- Dynamic module views will be injected here -->
+    </div>
+  </main>
+
+  <!-- Mobile Bottom Navigation (Member 3-Tap Rule) -->
+  <nav class="bottom-nav" id="mobileBottomNav">
+    <!-- Bottom nav buttons rendered dynamically -->
+  </nav>
+
+  <!-- Global Modal Overlay Backdrop -->
+  <div id="globalModalBackdrop" class="modal-backdrop" onclick="if(event.target===this) window.AAVIN_APP.closeModal()"></div>
+
+  <!-- Leaflet Map Engine -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+  <!-- Scripts in Topological Order -->
+  <script src="js/i18n.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/dairy-data.js"></script>
+  <script src="js/store.js"></script>
+  <script src="js/rbac.js"></script>
+  <script src="js/components/member-home.js"></script>
+  <script src="js/components/digital-id.js"></script>
+  <script src="js/components/issue-system.js"></script>
+  <script src="js/components/meetings.js"></script>
+  <script src="js/components/aavin-map.js"></script>
+  <script src="js/components/dairy-finder.js"></script>
+  <script src="js/components/news-channel.js"></script>
+  <script src="js/components/admin-portals.js"></script>
+  <script src="js/components/analytics.js"></script>
+  <script src="js/components/help-search.js"></script>
+  <script src="js/app.js"></script>
+
+</body>
+</html>
