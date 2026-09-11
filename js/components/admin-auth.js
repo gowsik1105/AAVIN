@@ -1,6 +1,10 @@
 /**
  * AAVIN SANGAM (ஆவின் சங்கம்)
  * Secure Supabase Admin Login Modal & Password Recovery Dialogs
+ * STRICT 3-ADMIN ACCOUNTS ONLY:
+ * 1. Tamil Nadu Admin -> gowsik1105@gmail.com
+ * 2. District Admin   -> aavindis@admin.com
+ * 3. Sangam Admin     -> aavinsangam@admin.com
  */
 
 window.AAVIN_COMPONENTS = window.AAVIN_COMPONENTS || {};
@@ -14,9 +18,9 @@ window.AAVIN_COMPONENTS.AdminAuth = {
     this.selectedRolePreset = role;
     const emailField = document.getElementById('adminAuthEmail');
     if (emailField) {
-      if (role === 'tamil_nadu_admin') emailField.value = 'tn.admin@aavin.tn.gov.in';
-      else if (role === 'district_admin') emailField.value = 'district.admin@aavin.tn.gov.in';
-      else if (role === 'sangam_admin') emailField.value = 'sangam.admin@aavin.tn.gov.in';
+      if (role === 'tamil_nadu_admin' || role === 'admin') emailField.value = 'gowsik1105@gmail.com';
+      else if (role === 'district_admin') emailField.value = 'aavindis@admin.com';
+      else if (role === 'sangam_admin') emailField.value = 'aavinsangam@admin.com';
     }
     document.querySelectorAll('.admin-role-preset-chip').forEach(chip => {
       chip.classList.toggle('active', chip.dataset.role === role);
@@ -28,9 +32,9 @@ window.AAVIN_COMPONENTS.AdminAuth = {
     this.errorMessage = '';
     const icon = (name, opts) => window.AAVIN_ICONS ? window.AAVIN_ICONS.render(name, opts) : '';
 
-    let defaultEmail = 'tn.admin@aavin.tn.gov.in';
-    if (targetRole === 'district_admin') defaultEmail = 'district.admin@aavin.tn.gov.in';
-    else if (targetRole === 'sangam_admin') defaultEmail = 'sangam.admin@aavin.tn.gov.in';
+    let defaultEmail = 'gowsik1105@gmail.com';
+    if (targetRole === 'district_admin') defaultEmail = 'aavindis@admin.com';
+    else if (targetRole === 'sangam_admin') defaultEmail = 'aavinsangam@admin.com';
 
     const html = `
       <div class="modal-dialog" style="max-width: 460px;">
@@ -41,28 +45,28 @@ window.AAVIN_COMPONENTS.AdminAuth = {
             </div>
             <div>
               <h3 style="font-size: 15px; color: #07355e; font-weight: 800;">Aavin Admin Portal</h3>
-              <div style="font-size: 11px; color: var(--text-muted);">Supabase Role-Based Secure Access</div>
+              <div style="font-size: 11px; color: var(--text-muted);">Official Approved Administrator Access</div>
             </div>
           </div>
-          <button class="btn btn-sm btn-secondary" onclick="window.AAVIN_APP.closeModal()">✕</button>
+          <button type="button" class="btn btn-sm btn-secondary" onclick="window.AAVIN_APP.closeModal()">✕</button>
         </div>
 
         <div class="modal-body">
           <!-- Role Selector Tabs -->
           <div style="display: flex; gap: 6px; margin-bottom: 16px; background: #f1f5f9; padding: 4px; border-radius: 10px;">
-            <button class="segmented-control-btn admin-role-preset-chip ${this.selectedRolePreset === 'tamil_nadu_admin' ? 'active' : ''}" data-role="tamil_nadu_admin" onclick="window.AAVIN_COMPONENTS.AdminAuth.setRolePreset('tamil_nadu_admin')" style="font-size: 11px;">
+            <button type="button" class="segmented-control-btn admin-role-preset-chip ${this.selectedRolePreset === 'tamil_nadu_admin' ? 'active' : ''}" data-role="tamil_nadu_admin" onclick="window.AAVIN_COMPONENTS.AdminAuth.setRolePreset('tamil_nadu_admin')" style="font-size: 11px;">
               👑 Tamil Nadu Admin
             </button>
-            <button class="segmented-control-btn admin-role-preset-chip ${this.selectedRolePreset === 'district_admin' ? 'active' : ''}" data-role="district_admin" onclick="window.AAVIN_COMPONENTS.AdminAuth.setRolePreset('district_admin')" style="font-size: 11px;">
+            <button type="button" class="segmented-control-btn admin-role-preset-chip ${this.selectedRolePreset === 'district_admin' ? 'active' : ''}" data-role="district_admin" onclick="window.AAVIN_COMPONENTS.AdminAuth.setRolePreset('district_admin')" style="font-size: 11px;">
               🏛️ District Admin
             </button>
-            <button class="segmented-control-btn admin-role-preset-chip ${this.selectedRolePreset === 'sangam_admin' ? 'active' : ''}" data-role="sangam_admin" onclick="window.AAVIN_COMPONENTS.AdminAuth.setRolePreset('sangam_admin')" style="font-size: 11px;">
+            <button type="button" class="segmented-control-btn admin-role-preset-chip ${this.selectedRolePreset === 'sangam_admin' ? 'active' : ''}" data-role="sangam_admin" onclick="window.AAVIN_COMPONENTS.AdminAuth.setRolePreset('sangam_admin')" style="font-size: 11px;">
               🏢 Sangam Admin
             </button>
           </div>
 
           ${this.errorMessage ? `
-            <div style="background: #fee2e2; border: 1px solid #fecdd3; border-radius: 8px; padding: 10px 12px; font-size: 12px; color: #dc2626; font-weight: 700; margin-bottom: 14px;">
+            <div style="background: #fee2e2; border: 1px solid #fecdd3; border-radius: 8px; padding: 10px 12px; font-size: 12px; color: #dc2626; font-weight: 700; margin-bottom: 14px; line-height: 1.4;">
               ⚠️ ${this.errorMessage}
             </div>
           ` : ''}
@@ -76,7 +80,7 @@ window.AAVIN_COMPONENTS.AdminAuth = {
               type="email" 
               id="adminAuthEmail" 
               value="${defaultEmail}" 
-              placeholder="admin@aavin.tn.gov.in" 
+              placeholder="admin@example.com" 
               style="width: 100%; padding: 10px 12px; border-radius: 8px; border: 1.5px solid var(--border-strong); font-size: 13.5px; outline: none;"
             />
           </div>
@@ -106,9 +110,9 @@ window.AAVIN_COMPONENTS.AdminAuth = {
           </div>
 
           <!-- Submit CTA -->
-          <button class="btn btn-primary btn-full btn-lg" onclick="window.AAVIN_COMPONENTS.AdminAuth.handleLoginSubmit()" style="margin-top: 6px;">
+          <button type="button" class="btn btn-primary btn-full btn-lg" onclick="window.AAVIN_COMPONENTS.AdminAuth.handleLoginSubmit()" ${this.isLoading ? 'disabled' : ''} style="margin-top: 6px;">
             ${icon('shieldCheck', { size: 16, color: '#ffffff' })}
-            <span>Sign In to Admin Dashboard →</span>
+            <span>${this.isLoading ? 'Verifying with Supabase...' : 'Sign In to Admin Dashboard →'}</span>
           </button>
 
           <div style="margin-top: 14px; text-align: center; font-size: 11.5px; color: var(--text-muted); line-height: 1.4;">
@@ -122,8 +126,10 @@ window.AAVIN_COMPONENTS.AdminAuth = {
   },
 
   async handleLoginSubmit() {
-    const email = document.getElementById('adminAuthEmail').value;
-    const pass = document.getElementById('adminAuthPassword').value;
+    if (this.isLoading) return;
+
+    const email = (document.getElementById('adminAuthEmail')?.value || '').trim();
+    const pass = (document.getElementById('adminAuthPassword')?.value || '').trim();
 
     if (!email || !pass) {
       this.errorMessage = 'Please enter both email and password.';
@@ -131,14 +137,25 @@ window.AAVIN_COMPONENTS.AdminAuth = {
       return;
     }
 
-    const res = await window.AAVIN_SUPABASE_AUTH.signInAdmin(email, pass);
-    if (res.success) {
-      window.AAVIN_APP.closeModal();
-      window.AAVIN_APP.renderNavigation();
-      window.AAVIN_APP.renderCurrentView();
-      window.AAVIN_APP.showToast(`Logged in as ${res.profile.fullName} (${res.profile.role})`);
-    } else {
-      this.errorMessage = res.error || 'Authentication failed. Check credentials.';
+    this.isLoading = true;
+    this.showLoginModal(this.selectedRolePreset);
+
+    try {
+      const res = await window.AAVIN_SUPABASE_AUTH.signInAdmin(email, pass);
+      this.isLoading = false;
+
+      if (res.success) {
+        window.AAVIN_APP.closeModal();
+        window.AAVIN_APP.renderNavigation();
+        window.AAVIN_APP.renderCurrentView();
+        window.AAVIN_APP.showToast(`Logged in as ${res.profile.fullName} (${res.profile.role})`);
+      } else {
+        this.errorMessage = res.error || 'Authentication failed. Check credentials.';
+        this.showLoginModal(this.selectedRolePreset);
+      }
+    } catch (err) {
+      this.isLoading = false;
+      this.errorMessage = err.message || 'Authentication failed. Please try again.';
       this.showLoginModal(this.selectedRolePreset);
     }
   },
@@ -150,19 +167,19 @@ window.AAVIN_COMPONENTS.AdminAuth = {
           <h3 style="font-size: 15px; color: var(--aavin-primary); font-weight: 800;">
             🔑 Password Reset Recovery
           </h3>
-          <button class="btn btn-sm btn-secondary" onclick="window.AAVIN_APP.closeModal()">✕</button>
+          <button type="button" class="btn btn-sm btn-secondary" onclick="window.AAVIN_APP.closeModal()">✕</button>
         </div>
         <div class="modal-body">
           <p style="font-size: 12.5px; color: var(--text-secondary); line-height: 1.4; margin-bottom: 14px;">
-            Enter your registered admin email address. A secure recovery link/OTP will be sent via Supabase Auth to reset your password.
+            Enter your approved admin email address. A secure recovery link will be sent via Supabase Auth to reset your password.
           </p>
 
           <div style="margin-bottom: 16px;">
             <label style="font-size: 12px; font-weight: 700; color: var(--text-secondary); display: block; margin-bottom: 4px;">Admin Email Address</label>
-            <input type="email" id="forgotPassEmail" placeholder="admin@aavin.tn.gov.in" style="width: 100%; padding: 10px 12px; border-radius: 8px; border: 1.5px solid var(--border-strong); font-size: 13.5px;" />
+            <input type="email" id="forgotPassEmail" placeholder="admin@example.com" style="width: 100%; padding: 10px 12px; border-radius: 8px; border: 1.5px solid var(--border-strong); font-size: 13.5px;" />
           </div>
 
-          <button class="btn btn-primary btn-full" onclick="window.AAVIN_COMPONENTS.AdminAuth.handleForgotSubmit()">
+          <button type="button" class="btn btn-primary btn-full" onclick="window.AAVIN_COMPONENTS.AdminAuth.handleForgotSubmit()">
             Send Password Recovery Link →
           </button>
 
@@ -178,7 +195,7 @@ window.AAVIN_COMPONENTS.AdminAuth = {
   },
 
   async handleForgotSubmit() {
-    const email = document.getElementById('forgotPassEmail').value;
+    const email = document.getElementById('forgotPassEmail')?.value;
     const res = await window.AAVIN_SUPABASE_AUTH.sendPasswordReset(email);
     if (res.success) {
       window.AAVIN_APP.closeModal();
@@ -195,7 +212,7 @@ window.AAVIN_COMPONENTS.AdminAuth = {
           <h3 style="font-size: 15px; color: var(--aavin-primary); font-weight: 800;">
             🔒 Set New Admin Password
           </h3>
-          <button class="btn btn-sm btn-secondary" onclick="window.AAVIN_APP.closeModal()">✕</button>
+          <button type="button" class="btn btn-sm btn-secondary" onclick="window.AAVIN_APP.closeModal()">✕</button>
         </div>
         <div class="modal-body">
           <p style="font-size: 12.5px; color: var(--text-secondary); line-height: 1.4; margin-bottom: 14px;">
@@ -212,7 +229,7 @@ window.AAVIN_COMPONENTS.AdminAuth = {
             <input type="password" id="confirmAdminPass" placeholder="Confirm new password" style="width: 100%; padding: 10px 12px; border-radius: 8px; border: 1.5px solid var(--border-strong); font-size: 13.5px;" />
           </div>
 
-          <button class="btn btn-success btn-full" onclick="window.AAVIN_COMPONENTS.AdminAuth.handleNewPasswordSubmit()">
+          <button type="button" class="btn btn-success btn-full" onclick="window.AAVIN_COMPONENTS.AdminAuth.handleNewPasswordSubmit()">
             Update Password & Login ✓
           </button>
         </div>
@@ -222,8 +239,8 @@ window.AAVIN_COMPONENTS.AdminAuth = {
   },
 
   async handleNewPasswordSubmit() {
-    const pass = document.getElementById('newAdminPass').value;
-    const confirm = document.getElementById('confirmAdminPass').value;
+    const pass = document.getElementById('newAdminPass')?.value;
+    const confirm = document.getElementById('confirmAdminPass')?.value;
 
     if (!pass || pass.length < 6) {
       window.AAVIN_APP.showToast('Password must be at least 6 characters long');
@@ -234,7 +251,7 @@ window.AAVIN_COMPONENTS.AdminAuth = {
       return;
     }
 
-    const res = await window.AAVIN_SUPABASE_AUTH.updateAdminPassword(pass);
+    const res = await window.AAVIN_SUPABASE_AUTH.updatePassword(pass);
     if (res.success) {
       window.AAVIN_APP.closeModal();
       window.AAVIN_APP.showToast('Password updated! Please log in.');

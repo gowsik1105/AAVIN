@@ -1,151 +1,227 @@
 -- ==============================================================================
 -- AAVIN SANGAM (ஆவின் சங்கம்)
--- Supabase Role-Based Admin Authentication & Row Level Security (RLS) Schema
+-- EXACT 3 APPROVED ADMIN ACCOUNTS & ROW LEVEL SECURITY (RLS) SCHEMA
 -- ==============================================================================
--- Roles:
--- 1. tamil_nadu_admin  -> State-wide executive oversight & main dairy management
--- 2. district_admin    -> District-specific union administration (e.g. Madurai)
--- 3. sangam_admin      -> Primary village cooperative / Sangam administration
+-- Approved Admin Whitelist:
+-- 1. Tamil Nadu Admin  -> gowsik1105@gmail.com  (admin_type: tamil_nadu)
+-- 2. District Admin    -> aavindis@admin.com    (admin_type: district)
+-- 3. Sangam Admin      -> aavinsangam@admin.com (admin_type: sangam)
+--
+-- Every other account  -> role = 'user' (No admin privileges)
 -- ==============================================================================
 
 -- Enable UUID extension
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- ------------------------------------------------------------------------------
--- 1. ADMIN PROFILES TABLE (Linked to auth.users)
+-- 1. UNIFIED PROFILES TABLE WITH STRICT ADMIN WHITELIST CONSTRAINT
 -- ------------------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS public.admin_profiles (
+CREATE TABLE IF NOT EXISTS public.profiles (
     id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
     email VARCHAR(255) NOT NULL UNIQUE,
-    full_name VARCHAR(150) NOT NULL,
-    role VARCHAR(50) NOT NULL CHECK (role IN ('tamil_nadu_admin', 'district_admin', 'sangam_admin')),
-    district_code VARCHAR(10),            -- e.g. 'MDU', 'CBE', 'SLM' (For district_admin)
-    district_name VARCHAR(100),
-    sangam_id VARCHAR(50),                -- e.g. 'sgm-mdu' (For sangam_admin)
-    sangam_name VARCHAR(150),
+    full_name VARCHAR(150),
+    full_name_ta VARCHAR(150),
+    role VARCHAR(50) NOT NULL DEFAULT 'user' 
+        CHECK (role IN ('user', 'admin')),
+    admin_type VARCHAR(50) 
+        CHECK (admin_type IS NULL OR admin_type IN ('tamil_nadu', 'district', 'sangam')),
+    district_code VARCHAR(10) DEFAULT 'MDU',
+    district_name VARCHAR(100) DEFAULT 'Madurai District',
+    sangam_id VARCHAR(50) DEFAULT 'sgm-mdu',
+    sangam_name VARCHAR(150) DEFAULT 'Aavin Madurai Thozhilar Sangam',
     phone VARCHAR(20),
+    occupation VARCHAR(100) DEFAULT 'Farmer',
     is_active BOOLEAN DEFAULT TRUE,
     last_login_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ DEFAULT NOW(),
-    updated_at TIMESTAMPTZ DEFAULT NOW()
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+
+    -- HARD DATABASE CONSTRAINT: ONLY the 3 approved emails can ever hold role='admin'
+    CONSTRAINT check_admin_whitelist CHECK (
+        role = 'user' OR (
+            role = 'admin' AND email IN (
+                'gowsik1105@gmail.com',
+                'aavindis@admin.com',
+                'aavinsangam@admin.com'
+            )
+        )
+    )
 );
 
--- Index for fast role & email lookups
-CREATE INDEX IF NOT EXISTS idx_admin_profiles_role ON public.admin_profiles(role);
-CREATE INDEX IF NOT EXISTS idx_admin_profiles_district ON public.admin_profiles(district_code);
-CREATE INDEX IF NOT EXISTS idx_admin_profiles_sangam ON public.admin_profiles(sangam_id);
+-- Indices for performance
+CREATE INDEX IF NOT EXISTS idx_profiles_role ON public.profiles(role);
+CREATE INDEX IF NOT EXISTS idx_profiles_email ON public.profiles(email);
+CREATE INDEX IF NOT EXISTS idx_profiles_admin_type ON public.profiles(admin_type);
 
 -- ------------------------------------------------------------------------------
--- 2. ROW LEVEL SECURITY (RLS) POLICIES ON ADMIN PROFILES
+-- 2. SECURITY DEFINER HELPER FUNCTIONS
 -- ------------------------------------------------------------------------------
-ALTER TABLE public.admin_profiles ENABLE ROW LEVEL SECURITY;
 
--- Helper function to get the current authenticated user's role securely
-CREATE OR REPLACE FUNCTION public.get_auth_admin_role()
+-- Get current authenticated user's role
+CREATE OR REPLACE FUNCTION public.get_auth_role()
 RETURNS VARCHAR AS $$
-    SELECT role FROM public.admin_profiles WHERE id = auth.uid() AND is_active = TRUE;
+    SELECT role FROM public.profiles WHERE id = auth.uid() AND is_active = TRUE;
 $$ LANGUAGE SQL SECURITY DEFINER STABLE;
 
--- Policy 1: Admins can view their own profile; Tamil Nadu Admin can view all
-CREATE POLICY "Admins can view own profile or TN Admin can view all"
-ON public.admin_profiles
+-- Get current authenticated user's admin type
+CREATE OR REPLACE FUNCTION public.get_auth_admin_type()
+RETURNS VARCHAR AS $$
+    SELECT admin_type FROM public.profiles WHERE id = auth.uid() AND is_active = TRUE AND role = 'admin';
+$$ LANGUAGE SQL SECURITY DEFINER STABLE;
+
+-- Check if current authenticated user is an authorized admin
+CREATE OR REPLACE FUNCTION public.is_admin()
+RETURNS BOOLEAN AS $$
+    SELECT EXISTS (
+        SELECT 1 FROM public.profiles 
+        WHERE id = auth.uid() 
+          AND is_active = TRUE 
+          AND role = 'admin'
+          AND email IN ('gowsik1105@gmail.com', 'aavindis@admin.com', 'aavinsangam@admin.com')
+    );
+$$ LANGUAGE SQL SECURITY DEFINER STABLE;
+
+-- Check if current user is Tamil Nadu State Admin (gowsik1105@gmail.com)
+CREATE OR REPLACE FUNCTION public.is_tamil_nadu_admin()
+RETURNS BOOLEAN AS $$
+    SELECT EXISTS (
+        SELECT 1 FROM public.profiles 
+        WHERE id = auth.uid() 
+          AND is_active = TRUE 
+          AND role = 'admin'
+          AND email = 'gowsik1105@gmail.com'
+    );
+$$ LANGUAGE SQL SECURITY DEFINER STABLE;
+
+-- ------------------------------------------------------------------------------
+-- 3. ROW LEVEL SECURITY (RLS) POLICIES
+-- ------------------------------------------------------------------------------
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+
+-- SELECT Policy: Users see own profile, Admins see all profiles
+CREATE POLICY "Users view own profile or Admins view all"
+ON public.profiles
 FOR SELECT
 USING (
     auth.uid() = id 
-    OR public.get_auth_admin_role() = 'tamil_nadu_admin'
+    OR public.is_admin()
 );
 
--- Policy 2: Only Tamil Nadu Admin can insert or update roles
-CREATE POLICY "Only TN Admin can manage admin profiles"
-ON public.admin_profiles
-FOR ALL
+-- INSERT Policy: Auto-registration or Admin insert
+CREATE POLICY "Insert profile policy"
+ON public.profiles
+FOR INSERT
+WITH CHECK (
+    auth.uid() = id 
+    OR public.is_admin()
+);
+
+-- UPDATE Policy: Normal users can update non-role fields; Only State Admin can edit roles
+CREATE POLICY "Update profile policy"
+ON public.profiles
+FOR UPDATE
 USING (
-    public.get_auth_admin_role() = 'tamil_nadu_admin'
+    auth.uid() = id 
+    OR public.is_admin()
+)
+WITH CHECK (
+    -- Normal users CANNOT change their role or admin_type
+    (auth.uid() = id AND role = 'user' AND admin_type IS NULL)
+    OR public.is_tamil_nadu_admin()
 );
 
--- ------------------------------------------------------------------------------
--- 3. RLS POLICIES FOR PROTECTED APPLICATION DATA
--- ------------------------------------------------------------------------------
-
--- Ensure issues table has RLS enabled
-ALTER TABLE IF EXISTS public.issues ENABLE ROW LEVEL SECURITY;
-
--- Issues Policy: Tamil Nadu Admin sees all; District Admin sees district; Sangam Admin sees sangam
-CREATE POLICY IF NOT EXISTS "Role-scoped issue access"
-ON public.issues
-FOR ALL
+-- DELETE Policy: Only Tamil Nadu State Admin can delete
+CREATE POLICY "Delete profile policy"
+ON public.profiles
+FOR DELETE
 USING (
-    public.get_auth_admin_role() = 'tamil_nadu_admin'
-    OR (public.get_auth_admin_role() = 'district_admin' AND district_code = (SELECT district_code FROM public.admin_profiles WHERE id = auth.uid()))
-    OR (public.get_auth_admin_role() = 'sangam_admin' AND sangam_id = (SELECT sangam_id FROM public.admin_profiles WHERE id = auth.uid()))
-    OR auth.role() = 'anon' -- Allows public member reporting
+    public.is_tamil_nadu_admin()
 );
 
 -- ------------------------------------------------------------------------------
--- 4. INSTRUCTIONS TO SETUP THE 3 ADMIN USERS IN SUPABASE DASHBOARD
+-- 4. AUTOMATIC NEW USER REGISTRATION TRIGGER (ALWAYS ASSIGNS role='user')
 -- ------------------------------------------------------------------------------
-/*
-STEP 1: Open your Supabase Project Dashboard -> Authentication -> Users -> "Add User" (or "Invite User").
-Create 3 users with your desired secure passwords (passwords are hashed by Supabase bcrypt):
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER AS $$
+BEGIN
+    INSERT INTO public.profiles (
+        id, 
+        email, 
+        full_name, 
+        full_name_ta, 
+        phone, 
+        role, 
+        admin_type,
+        district_code, 
+        district_name,
+        sangam_id,
+        sangam_name,
+        occupation,
+        is_active
+    ) VALUES (
+        NEW.id,
+        NEW.email,
+        COALESCE(NEW.raw_user_meta_data->>'full_name', 'Aavin Member'),
+        COALESCE(NEW.raw_user_meta_data->>'full_name_ta', 'ஆவின் உறுப்பினர்'),
+        COALESCE(NEW.raw_user_meta_data->>'phone', ''),
+        -- If signing up with one of the 3 approved admin emails, assign admin role & type
+        CASE 
+            WHEN NEW.email = 'gowsik1105@gmail.com' THEN 'admin'
+            WHEN NEW.email = 'aavindis@admin.com' THEN 'admin'
+            WHEN NEW.email = 'aavinsangam@admin.com' THEN 'admin'
+            ELSE 'user'
+        END,
+        CASE 
+            WHEN NEW.email = 'gowsik1105@gmail.com' THEN 'tamil_nadu'
+            WHEN NEW.email = 'aavindis@admin.com' THEN 'district'
+            WHEN NEW.email = 'aavinsangam@admin.com' THEN 'sangam'
+            ELSE NULL
+        END,
+        COALESCE(NEW.raw_user_meta_data->>'district_code', 'MDU'),
+        COALESCE(NEW.raw_user_meta_data->>'district_name', 'Madurai District'),
+        COALESCE(NEW.raw_user_meta_data->>'sangam_id', 'sgm-mdu'),
+        COALESCE(NEW.raw_user_meta_data->>'sangam_name', 'Aavin Madurai Thozhilar Sangam'),
+        COALESCE(NEW.raw_user_meta_data->>'occupation', 'Farmer'),
+        TRUE
+    )
+    ON CONFLICT (id) DO UPDATE SET
+        role = EXCLUDED.role,
+        admin_type = EXCLUDED.admin_type,
+        updated_at = NOW();
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 
-User 1:
-  - Email: tn.admin@aavin.tn.gov.in (or your state admin email)
-  - Auto Confirm Email: YES
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+    AFTER INSERT ON auth.users
+    FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 
-User 2:
-  - Email: district.admin@aavin.tn.gov.in (or your district admin email)
-  - Auto Confirm Email: YES
+-- ------------------------------------------------------------------------------
+-- 5. SETUP / PROMOTION QUERY FOR THE 3 APPROVED ADMIN ACCOUNTS
+-- ------------------------------------------------------------------------------
+-- Run this in Supabase SQL Editor to initialize or promote the 3 approved accounts:
 
-User 3:
-  - Email: sangam.admin@aavin.tn.gov.in (or your sangam admin email)
-  - Auto Confirm Email: YES
-
-STEP 2: Run the SQL below in Supabase SQL Editor to link their IDs to roles:
-
--- Replace the email addresses with your exact configured emails:
-
-INSERT INTO public.admin_profiles (id, email, full_name, role, district_code, district_name, sangam_id, sangam_name)
+-- 1. Tamil Nadu Admin:
+INSERT INTO public.profiles (id, email, full_name, role, admin_type, district_code, district_name, sangam_id, sangam_name)
 SELECT 
-    id, 
-    email, 
-    'Thiru S. Rajendran, IAS (State Secretary)', 
-    'tamil_nadu_admin', 
-    'ALL', 
-    'Tamil Nadu State Headquarters', 
-    'ALL', 
-    'State Secretariat'
-FROM auth.users 
-WHERE email = 'tn.admin@aavin.tn.gov.in'
+    id, email, 'Tamil Nadu State Administrator', 'admin', 'tamil_nadu', 'ALL', 'Tamil Nadu State Headquarters', 'ALL', 'State Secretariat'
+FROM auth.users WHERE email = 'gowsik1105@gmail.com'
 ON CONFLICT (id) DO UPDATE 
-SET role = 'tamil_nadu_admin', updated_at = NOW();
+SET role = 'admin', admin_type = 'tamil_nadu', updated_at = NOW();
 
-INSERT INTO public.admin_profiles (id, email, full_name, role, district_code, district_name, sangam_id, sangam_name)
+-- 2. District Admin:
+INSERT INTO public.profiles (id, email, full_name, role, admin_type, district_code, district_name, sangam_id, sangam_name)
 SELECT 
-    id, 
-    email, 
-    'Er. M. Saravanan (District Milk Officer)', 
-    'district_admin', 
-    'MDU', 
-    'Madurai District', 
-    'sgm-mdu', 
-    'Madurai District Cooperative Milk Producers Union'
-FROM auth.users 
-WHERE email = 'district.admin@aavin.tn.gov.in'
+    id, email, 'District Dairy Officer', 'admin', 'district', 'MDU', 'Madurai District', 'sgm-mdu', 'Madurai Cooperative Milk Producers Union'
+FROM auth.users WHERE email = 'aavindis@admin.com'
 ON CONFLICT (id) DO UPDATE 
-SET role = 'district_admin', district_code = 'MDU', updated_at = NOW();
+SET role = 'admin', admin_type = 'district', district_code = 'MDU', updated_at = NOW();
 
-INSERT INTO public.admin_profiles (id, email, full_name, role, district_code, district_name, sangam_id, sangam_name)
+-- 3. Sangam Admin:
+INSERT INTO public.profiles (id, email, full_name, role, admin_type, district_code, district_name, sangam_id, sangam_name)
 SELECT 
-    id, 
-    email, 
-    'Thiru S. Palanivel (Sangam Secretary)', 
-    'sangam_admin', 
-    'MDU', 
-    'Madurai District', 
-    'sgm-mdu', 
-    'Aavin Madurai Thozhilar Sangam'
-FROM auth.users 
-WHERE email = 'sangam.admin@aavin.tn.gov.in'
+    id, email, 'Sangam Secretary', 'admin', 'sangam', 'MDU', 'Madurai District', 'sgm-mdu', 'Aavin Madurai Thozhilar Sangam'
+FROM auth.users WHERE email = 'aavinsangam@admin.com'
 ON CONFLICT (id) DO UPDATE 
-SET role = 'sangam_admin', sangam_id = 'sgm-mdu', updated_at = NOW();
-*/
+SET role = 'admin', admin_type = 'sangam', sangam_id = 'sgm-mdu', updated_at = NOW();

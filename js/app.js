@@ -81,41 +81,35 @@ window.AAVIN_APP = {
     if (tab === 'home') {
       if (role === 'sangam_admin') tab = 'admin_sangam';
       else if (role === 'district_admin') tab = 'admin_district';
-      else if (role === 'tamil_nadu_admin' || role === 'state_admin') tab = 'admin_state';
+      else if (role === 'tamil_nadu_admin' || role === 'state_admin' || role === 'admin') tab = 'admin_state';
     }
 
-    // Supabase Admin Authentication Protection for Admin Views
-    const adminTabRoleMap = {
-      'admin_sangam': 'sangam_admin',
-      'admin_district': 'district_admin',
-      'admin_state': 'tamil_nadu_admin'
-    };
-
-    if (adminTabRoleMap[tab]) {
-      const requiredRole = adminTabRoleMap[tab];
-      const hasAuth = window.AAVIN_SUPABASE_AUTH && window.AAVIN_SUPABASE_AUTH.hasAdminSession(requiredRole);
-      if (!hasAuth) {
+    // Strict Database-Backed Admin Route Guard (TASK 4 & TASK 7)
+    const adminTabs = ['admin_sangam', 'admin_district', 'admin_state', 'admin_users', 'heatmap', 'analytics'];
+    if (adminTabs.includes(tab)) {
+      const isDbAdmin = window.AAVIN_SUPABASE_AUTH && window.AAVIN_SUPABASE_AUTH.hasAdminSession();
+      if (!isDbAdmin) {
         const lang = window.I18N ? window.I18N.currentLang : 'ta';
         const icon = (name, opts) => window.AAVIN_ICONS ? window.AAVIN_ICONS.render(name, opts) : '';
         mainContainer.innerHTML = `
           <div style="max-width: 520px; margin: 40px auto; text-align: center;">
-            <div class="card card-floating-3d" style="padding: 32px 24px; border-top: 5px solid #0b4f8a;">
-              <div style="font-size: 42px; margin-bottom: 10px;">🔐</div>
-              <h3 style="font-size: 1.25rem; font-weight: 800; color: #07355e; margin-bottom: 8px;">
-                ${lang === 'ta' ? 'நிர்வாக உள்நுழைவு தேவை' : 'Admin Authentication Required'}
+            <div class="card card-floating-3d" style="padding: 32px 24px; border-top: 5px solid #dc2626;">
+              <div style="font-size: 44px; margin-bottom: 12px;">🚫</div>
+              <h3 style="font-size: 1.25rem; font-weight: 800; color: #dc2626; margin-bottom: 8px;">
+                ${lang === 'ta' ? 'அணுகல் மறுக்கப்பட்டது (Access Denied)' : 'Admin Access Restricted'}
               </h3>
               <p style="font-size: 13px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 20px;">
                 ${lang === 'ta' 
-                  ? 'இந்த பக்கத்தை பார்க்க நீங்கள் ஆவின் நிர்வாகியாக Supabase மூலம் உள்நுழைய வேண்டும்.' 
-                  : 'This dashboard is protected by Supabase Auth and Row Level Security. Please authenticate with your official credentials.'}
+                  ? 'இந்த நிர்வாக பக்கத்தை அணுக உங்கள் பயனர் கணக்கிற்கு Supabase Database மூலம் அனுமதி வழங்கப்படவில்லை.' 
+                  : 'You do not have administrative privileges in the Supabase database to view this protected dashboard.'}
               </p>
               <div style="display: flex; justify-content: center; gap: 10px;">
-                <button class="btn btn-primary" onclick="window.AAVIN_COMPONENTS.AdminAuth.showLoginModal('${requiredRole}')">
-                  ${icon('gov', { size: 16, color: '#ffffff' })}
-                  <span>${lang === 'ta' ? 'நிர்வாகியாக உள்நுழைக' : 'Admin Secure Login'}</span>
+                <button type="button" class="btn btn-primary" onclick="window.AAVIN_COMPONENTS.AdminAuth.showLoginModal()">
+                  ${icon('shieldCheck', { size: 16, color: '#ffffff' })}
+                  <span>${lang === 'ta' ? 'நிர்வாகியாக உள்நுழைக' : 'Admin Login'}</span>
                 </button>
-                <button class="btn btn-secondary" onclick="window.AAVIN_APP.navigate('home')">
-                  <span>${lang === 'ta' ? 'முகப்பு' : 'Return Home'}</span>
+                <button type="button" class="btn btn-secondary" onclick="window.AAVIN_APP.navigate('home')">
+                  <span>${lang === 'ta' ? 'முகப்புக்கு திரும்பு' : 'Return to Safe Home'}</span>
                 </button>
               </div>
             </div>
@@ -185,6 +179,9 @@ window.AAVIN_APP = {
         break;
       case 'admin_state':
         html = window.AAVIN_COMPONENTS.AdminPortals ? window.AAVIN_COMPONENTS.AdminPortals.renderStateAdmin() : '';
+        break;
+      case 'admin_users':
+        html = window.AAVIN_COMPONENTS.AdminPortals ? window.AAVIN_COMPONENTS.AdminPortals.renderUserManagement() : '';
         break;
       case 'heatmap':
         html = window.AAVIN_COMPONENTS.Analytics ? window.AAVIN_COMPONENTS.Analytics.renderHeatmap() : '';
@@ -377,9 +374,10 @@ window.AAVIN_APP = {
           <a href="javascript:void(0)" class="desktop-nav-link" onclick="window.AAVIN_APP.navigate('map')">${icon('map', { size: 15 })} ${t('navMap')}</a>
           <a href="javascript:void(0)" class="desktop-nav-link" onclick="window.AAVIN_APP.navigate('settings')">${icon('settings', { size: 15 })} Settings</a>
         `;
-      } else if (role === 'tamil_nadu_admin' || role === 'state_admin') {
+      } else if (role === 'admin' || role === 'tamil_nadu_admin' || role === 'state_admin') {
         desktopNav.innerHTML = `
-          <a href="javascript:void(0)" class="desktop-nav-link" onclick="window.AAVIN_APP.navigate('admin_state')">${icon('gov', { size: 15 })} State Secretariat</a>
+          <a href="javascript:void(0)" class="desktop-nav-link" onclick="window.AAVIN_APP.navigate('admin_state')">${icon('gov', { size: 15 })} Admin Dashboard</a>
+          <a href="javascript:void(0)" class="desktop-nav-link" onclick="window.AAVIN_APP.navigate('admin_users')">${icon('user', { size: 15 })} User Management</a>
           <a href="javascript:void(0)" class="desktop-nav-link" onclick="window.AAVIN_APP.navigate('heatmap')">${icon('trendingUp', { size: 15 })} State Heatmap</a>
           <a href="javascript:void(0)" class="desktop-nav-link" onclick="window.AAVIN_APP.navigate('analytics')">${icon('zap', { size: 15 })} State Analytics</a>
           <a href="javascript:void(0)" class="desktop-nav-link" onclick="window.AAVIN_APP.navigate('issues', { action: 'track' })">${icon('issues', { size: 15 })} Dept Routing</a>

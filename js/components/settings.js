@@ -31,9 +31,13 @@ window.AAVIN_COMPONENTS.Settings = {
   },
 
   render() {
-    const lang = window.I18N.currentLang;
-    const t = (k) => window.I18N.t(k);
-    const member = window.AAVIN_DATA.currentMember;
+    const lang = window.I18N ? window.I18N.currentLang : 'ta';
+    const member = window.AAVIN_DATA.currentMember || {
+      name_en: 'S. Saravanan',
+      memberId: 'TN-MDU-2026-8841',
+      mobile: '98421 76540',
+      avatarUrl: 'assets/logo.jpg'
+    };
     const icon = (name, opts) => window.AAVIN_ICONS ? window.AAVIN_ICONS.render(name, opts) : '';
     const s = this.settingsState;
 
@@ -54,15 +58,15 @@ window.AAVIN_COMPONENTS.Settings = {
         <div class="card card-floating-3d" style="margin-bottom: 14px;">
           <div class="card-header">
             <h3 class="card-title">${icon('user', { size: 18, color: '#0b4f8a' })} Account Profile</h3>
-            <button class="btn btn-secondary btn-sm" onclick="window.AAVIN_APP.navigate('digital_id')">View ID</button>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="window.AAVIN_APP.navigate('digital_id')">View ID</button>
           </div>
           <div style="display: flex; align-items: center; gap: 14px;">
             <div style="width: 54px; height: 54px; border-radius: 50%; overflow: hidden; border: 2px solid var(--aavin-primary);">
-              <img src="${member.avatarUrl}" alt="Avatar" style="width: 100%; height: 100%; object-fit: cover;" />
+              <img src="${member.avatarUrl || 'assets/logo.jpg'}" alt="Avatar" style="width: 100%; height: 100%; object-fit: cover;" />
             </div>
             <div>
-              <div style="font-weight: 800; font-size: 15px; color: var(--text-primary);">${member.name_en}</div>
-              <div style="font-size: 12px; color: var(--text-muted);">+91 ${member.mobile} • ${member.memberId}</div>
+              <div style="font-weight: 800; font-size: 15px; color: var(--text-primary);">${member.name_en || 'Aavin Member'}</div>
+              <div style="font-size: 12px; color: var(--text-muted);">+91 ${member.mobile || '98421 76540'} • ${member.memberId || 'TN-MDU-2026'}</div>
             </div>
           </div>
         </div>
@@ -134,7 +138,7 @@ window.AAVIN_COMPONENTS.Settings = {
         </div>
 
         <!-- Logout Button -->
-        <button class="btn btn-danger btn-full btn-lg" onclick="window.AAVIN_COMPONENTS.Auth.logout()">
+        <button type="button" class="btn btn-danger btn-full btn-lg" onclick="window.AAVIN_COMPONENTS.Auth.logout()">
           🚪 Log Out (வெளியேறு)
         </button>
       </div>
@@ -144,7 +148,7 @@ window.AAVIN_COMPONENTS.Settings = {
   renderTerms() {
     return `
       <div style="max-width: 760px; margin: 0 auto;">
-        <button class="btn btn-secondary btn-sm" style="margin-bottom: 14px;" onclick="window.AAVIN_APP.navigate('settings')">← Back to Settings</button>
+        <button type="button" class="btn btn-secondary btn-sm" style="margin-bottom: 14px;" onclick="window.AAVIN_APP.navigate('settings')">← Back to Settings</button>
         <div class="card card-floating-3d">
           <h2 style="font-size: 1.4rem; color: #07355e; font-weight: 800; margin-bottom: 8px;">Terms & Conditions (விதிமுறைகள்)</h2>
           <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 16px;">Effective Date: September 2026 • Government of Tamil Nadu</p>
@@ -175,7 +179,7 @@ window.AAVIN_COMPONENTS.Settings = {
   renderPrivacy() {
     return `
       <div style="max-width: 760px; margin: 0 auto;">
-        <button class="btn btn-secondary btn-sm" style="margin-bottom: 14px;" onclick="window.AAVIN_APP.navigate('settings')">← Back to Settings</button>
+        <button type="button" class="btn btn-secondary btn-sm" style="margin-bottom: 14px;" onclick="window.AAVIN_APP.navigate('settings')">← Back to Settings</button>
         <div class="card card-floating-3d">
           <h2 style="font-size: 1.4rem; color: #07355e; font-weight: 800; margin-bottom: 8px;">Privacy Policy (தனியுரிமை கொள்கை)</h2>
           <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 16px;">Official Government Cooperative Data Protection Statement</p>

@@ -77,6 +77,34 @@ try {
             }
 
             # -------------------------------------------------------------
+            # REST API: Public Environment Variables Config (/api/config)
+            # -------------------------------------------------------------
+            if ($urlPath -eq "api/config" -and $method -eq "GET") {
+                $envFile = Join-Path $path ".env"
+                $supUrl = ""
+                $supKey = ""
+                if (Test-Path $envFile) {
+                    Get-Content $envFile | ForEach-Object {
+                        $line = $_.Trim()
+                        if ($line -match "^VITE_SUPABASE_URL\s*=\s*(.+)$") {
+                            $supUrl = $matches[1].Trim('"' + "'")
+                        } elseif ($line -match "^SUPABASE_URL\s*=\s*(.+)$" -and [string]::IsNullOrWhiteSpace($supUrl)) {
+                            $supUrl = $matches[1].Trim('"' + "'")
+                        } elseif ($line -match "^VITE_SUPABASE_ANON_KEY\s*=\s*(.+)$") {
+                            $supKey = $matches[1].Trim('"' + "'")
+                        } elseif ($line -match "^SUPABASE_ANON_KEY\s*=\s*(.+)$" -and [string]::IsNullOrWhiteSpace($supKey)) {
+                            $supKey = $matches[1].Trim('"' + "'")
+                        }
+                    }
+                }
+                Send-JsonResponse $response 200 @{
+                    VITE_SUPABASE_URL = $supUrl
+                    VITE_SUPABASE_ANON_KEY = $supKey
+                }
+                continue
+            }
+
+            # -------------------------------------------------------------
             # REST API: Authentication (Phone Number + OTP)
             # -------------------------------------------------------------
             if ($urlPath -eq "api/auth/send-otp" -and $method -eq "POST") {

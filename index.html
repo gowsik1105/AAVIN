@@ -85,12 +85,12 @@
           </div>
 
           <!-- Bilingual Switcher: English | தமிழ் -->
-          <button id="langToggleBtn" class="lang-toggle-btn" onclick="window.AAVIN_APP.toggleLanguage()" title="Switch Language">
+          <button type="button" id="langToggleBtn" class="lang-toggle-btn" onclick="window.AAVIN_APP.toggleLanguage()" title="Switch Language">
             English
           </button>
 
           <!-- Notification Bell -->
-          <button class="btn btn-secondary btn-sm" style="position: relative; padding: 6px 10px; border-radius: var(--radius-full);" onclick="window.AAVIN_APP.showNotifications()" title="Notifications">
+          <button type="button" class="btn btn-secondary btn-sm" style="position: relative; padding: 6px 10px; border-radius: var(--radius-full);" onclick="window.AAVIN_APP.showNotifications()" title="Notifications">
             <span id="headerBellIcon"></span>
             <span id="headerBellBadge" style="position: absolute; top: -3px; right: -3px; background: #dc2626; color: white; border-radius: 50%; width: 16px; height: 16px; font-size: 10px; font-weight: 800; display: flex; align-items: center; justify-content: center;">
               2
@@ -124,7 +124,7 @@
   <!-- Leaflet Map Engine -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 
-  <!-- Supabase JS Client (Optional Cloud Sync) -->
+  <!-- Supabase JS Client (Official Cloud SDK) -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <!-- Scripts in Topological Dependency Order -->
@@ -134,6 +134,7 @@
   <script src="js/store.js"></script>
   <script src="js/rbac.js"></script>
   <script src="js/components/icons.js"></script>
+  <script src="js/supabase.js"></script>
   <script src="js/supabase-auth.js"></script>
   <script src="js/components/admin-auth.js"></script>
   <script src="js/components/auth.js"></script>
