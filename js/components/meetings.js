@@ -31,10 +31,26 @@ window.AAVIN_COMPONENTS.Meetings = {
     const icon = (name, opts) => window.AAVIN_ICONS ? window.AAVIN_ICONS.render(name, opts) : '';
 
     if (this.currentTab === 'upcoming') {
+      if (meetings.length === 0) {
+        return `
+          <div class="card card-floating-3d hover-lift" style="text-align: center; padding: 36px 20px; border: 1.5px dashed var(--border-strong); background: #fafcff;">
+            <div style="width: 56px; height: 56px; border-radius: 16px; background: #e0f2fe; color: #0284c7; display: flex; align-items: center; justify-content: center; margin: 0 auto 14px auto;">
+              ${icon('video', { size: 28, color: '#0284c7' })}
+            </div>
+            <h3 style="font-size: 16px; font-weight: 800; color: var(--text-primary); margin-bottom: 4px;">
+              ${lang === 'ta' ? 'வரவிருக்கும் கூட்டங்கள் எதுவும் திட்டமிடப்படவில்லை' : 'No Upcoming Meetings Scheduled'}
+            </h3>
+            <p style="font-size: 12.5px; color: var(--text-muted); line-height: 1.4; max-width: 380px; margin: 0 auto;">
+              ${lang === 'ta' ? 'அடுத்த ஆவின் சங்க ஆலோசனைக் கூட்டம் திட்டமிடப்பட்டதும் இங்கு அறிவிக்கப்படும்.' : 'New council assemblies and virtual meetings will appear here when scheduled.'}
+            </p>
+          </div>
+        `;
+      }
+
       return `
         <div style="display: flex; flex-direction: column; gap: 14px;">
           ${meetings.map(m => `
-            <div class="card card-floating-3d" style="border-left: 5px solid var(--aavin-primary);">
+            <div class="card card-floating-3d hover-lift" style="border-left: 5px solid var(--aavin-primary);">
               <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 12px; margin-bottom: 12px;">
                 <div>
                   <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
@@ -98,7 +114,7 @@ window.AAVIN_COMPONENTS.Meetings = {
             <!-- Speaker Main Video Box -->
             <div class="meeting-video-screen" style="border: 2px solid #0284c7; border-radius: 12px;">
               <div style="width: 68px; height: 68px; border-radius: 50%; background: #0b4f8a; display: flex; align-items: center; justify-content: center; font-size: 28px; border: 3px solid #38bdf8;">
-                👨‍💼
+                ${icon('user', { size: 36, color: '#ffffff' })}
               </div>
               <div style="margin-top: 8px; font-size: 13.5px; font-weight: 800; color: white;">
                 Thiru S. Palanivel (Secretary)
@@ -110,8 +126,9 @@ window.AAVIN_COMPONENTS.Meetings = {
 
             <!-- Live Chat & Resolutions Panel -->
             <div style="background: #1e293b; border-radius: 12px; padding: 12px; display: flex; flex-direction: column; justify-content: space-between; min-height: 240px;">
-              <div style="font-size: 12.5px; font-weight: 800; color: #93c5fd; border-bottom: 1px solid #334155; padding-bottom: 6px;">
-                💬 Live Meeting Chat & Q&A
+              <div style="font-size: 12.5px; font-weight: 800; color: #93c5fd; border-bottom: 1px solid #334155; padding-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+                ${icon('meetings', { size: 14, color: '#93c5fd' })}
+                <span>Live Meeting Chat & Q&A</span>
               </div>
               
               <div style="display: flex; flex-direction: column; gap: 8px; font-size: 12px; margin: 10px 0; overflow-y: auto; max-height: 140px;">
@@ -147,18 +164,34 @@ window.AAVIN_COMPONENTS.Meetings = {
     }
 
     if (this.currentTab === 'completed') {
+      if (pastRecordings.length === 0) {
+        return `
+          <div class="card card-floating-3d hover-lift" style="text-align: center; padding: 36px 20px; border: 1.5px dashed var(--border-strong); background: #fafcff;">
+            <div style="width: 56px; height: 56px; border-radius: 16px; background: #e0f2fe; color: #0284c7; display: flex; align-items: center; justify-content: center; margin: 0 auto 14px auto;">
+              ${icon('fileText', { size: 28, color: '#0284c7' })}
+            </div>
+            <h3 style="font-size: 16px; font-weight: 800; color: var(--text-primary); margin-bottom: 4px;">
+              ${lang === 'ta' ? 'பதிவு செய்யப்பட்ட கூட்டங்கள் எதுவும் இல்லை' : 'No Past Proceedings Found'}
+            </h3>
+            <p style="font-size: 12.5px; color: var(--text-muted); line-height: 1.4; max-width: 380px; margin: 0 auto;">
+              ${lang === 'ta' ? 'முடிவடைந்த கூட்டங்களின் தீர்மான அறிக்கைகள் மற்றும் ஆவணங்கள் இங்கு சேமிக்கப்படும்.' : 'Recorded minutes and resolution summaries will be archived here.'}
+            </p>
+          </div>
+        `;
+      }
+
       return `
         <div style="display: flex; flex-direction: column; gap: 14px;">
           ${pastRecordings.map(rec => `
-            <div class="card card-floating-3d">
+            <div class="card card-floating-3d hover-lift">
               <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 10px;">
                 <div>
                   <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
                     <span class="badge" style="background: #f1f5f9; color: #475569;">
-                      📅 ${rec.date}
+                      ${icon('clock', { size: 11, color: 'currentColor' })} ${rec.date}
                     </span>
                     <span class="badge" style="background: #e0f2fe; color: #0284c7;">
-                      ⏱️ ${rec.duration}
+                      ${icon('video', { size: 11, color: 'currentColor' })} ${rec.duration}
                     </span>
                   </div>
                   <h4 style="font-size: 14.5px; font-weight: 800; color: var(--text-primary); margin-top: 4px;">

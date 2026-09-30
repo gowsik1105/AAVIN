@@ -1,87 +1,118 @@
 /* ==========================================================================
    AAVIN SANGAM (ஆவின் சங்கம்)
-   Responsive & Adaptive Media Queries - Mobile App Ergonomics
+   Comprehensive Responsive & Adaptive Design System
+   Breakpoints Supported:
+   - 320px - 374px: Small Mobile (iPhone SE, compact devices)
+   - 375px - 429px: Standard Mobile (iPhone 12/13/14/15, Galaxy S series)
+   - 430px - 599px: Large Mobile (Pro Max, Plus, Pixel XL)
+   - 600px - 767px: Phablets / Foldables / Small Tablets
+   - 768px - 1023px: Tablets in Portrait (iPad, Galaxy Tab)
+   - 1024px - 1279px: Tablets in Landscape & Small Laptops
+   - 1280px - 1439px: Standard Laptops & Desktops
+   - 1440px - 1920px+: High-Resolution Desktop Displays
    ========================================================================== */
 
-/* Grid utilities */
+/* --------------------------------------------------------------------------
+   1. Universal Fluid Grid Utilities (All Screen Sizes)
+   -------------------------------------------------------------------------- */
 .grid-2 {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 16px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: clamp(12px, 2vw, 18px);
 }
 
 .grid-3 {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(12px, 2vw, 18px);
 }
 
 .grid-4 {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 16px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: clamp(12px, 2vw, 18px);
 }
 
-/* Map Layout Grid */
+/* --------------------------------------------------------------------------
+   2. Map Layout Grid (Desktop Default)
+   -------------------------------------------------------------------------- */
 .map-layout-grid {
   display: grid;
-  grid-template-columns: 320px 1fr 340px;
+  grid-template-columns: minmax(280px, 320px) minmax(0, 1fr) minmax(300px, 340px);
   gap: 18px;
   align-items: start;
 }
 
-@media (max-width: 1024px) {
-  .map-layout-grid {
-    grid-template-columns: 300px 1fr;
-  }
-  #dairyDetailContainer {
-    grid-column: 1 / -1;
-  }
-  .grid-4 {
-    grid-template-columns: repeat(2, 1fr);
-  }
+/* --------------------------------------------------------------------------
+   3. Responsive Form Controls & Input Ergonomics
+   -------------------------------------------------------------------------- */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="tel"],
+input[type="number"],
+select,
+textarea {
+  width: 100%;
+  max-width: 100%;
+  font-size: 15px; /* Comfortable legible base size */
+  box-sizing: border-box;
+  -webkit-appearance: none;
+  appearance: none;
 }
 
+/* Ensure mobile Safari doesn't zoom in unexpectedly on input focus */
 @media (max-width: 768px) {
-  .main-wrapper {
-    padding: 12px;
-    padding-bottom: 84px; /* Clearance for bottom navigation bar */
-  }
-
-  .grid-2, .grid-3, .grid-4 {
-    grid-template-columns: 1fr;
-    gap: 12px;
-  }
-
-  .map-layout-grid {
-    grid-template-columns: 1fr;
-    gap: 14px;
-  }
-
-  #aavinLeafletMap {
-    height: 360px !important;
-  }
-
-  .header-search-wrap {
-    display: none;
-  }
-
-  .desktop-nav-bar {
-    display: none;
-  }
-
-  .brand-title-wrap .sub-title {
-    display: none;
-  }
-
-  .location-ribbon {
-    flex-direction: column;
-    align-items: flex-start;
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="tel"],
+  input[type="number"],
+  select,
+  textarea {
+    font-size: 16px !important;
   }
 }
 
-/* Desktop Styles */
-@media (min-width: 769px) {
+/* Responsive Table Wrappers */
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+/* Responsive Images & Media */
+img, svg, video {
+  max-width: 100%;
+  height: auto;
+}
+
+/* --------------------------------------------------------------------------
+   4. High-Resolution Large Desktops (>= 1440px)
+   -------------------------------------------------------------------------- */
+@media (min-width: 1440px) {
+  .main-wrapper {
+    max-width: 1400px;
+  }
+
+  .header-container {
+    max-width: 1400px;
+  }
+
+  .desktop-nav-links {
+    max-width: 1400px;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   5. Standard Desktops & Laptops (1025px - 1439px)
+   -------------------------------------------------------------------------- */
+@media (min-width: 1025px) {
   .header-search-wrap {
     display: block;
     flex: 1;
@@ -96,7 +127,7 @@
   }
 
   .bottom-nav {
-    display: none;
+    display: none !important;
   }
 
   .desktop-nav-links {
@@ -104,6 +135,11 @@
     align-items: center;
     gap: 8px;
     overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .desktop-nav-links::-webkit-scrollbar {
+    display: none;
   }
 
   .desktop-nav-link {
@@ -117,54 +153,328 @@
     display: inline-flex;
     align-items: center;
     gap: 6px;
+    white-space: nowrap;
   }
 
-  .desktop-nav-link:hover, .desktop-nav-link.active {
+  .desktop-nav-link:hover,
+  .desktop-nav-link.active {
     color: var(--aavin-primary);
     background-color: var(--aavin-primary-light);
   }
+}
 
-  .admin-layout {
-    display: grid;
-    grid-template-columns: 240px 1fr;
-    gap: 20px;
-    align-items: start;
+/* --------------------------------------------------------------------------
+   6. Tablets in Landscape & Medium Screens (769px - 1024px)
+   -------------------------------------------------------------------------- */
+@media (max-width: 1024px) {
+  .map-layout-grid {
+    grid-template-columns: minmax(260px, 300px) minmax(0, 1fr);
   }
 
-  .admin-sidebar {
-    background: white;
-    border: 1px solid var(--border-subtle);
-    border-radius: var(--radius-lg);
-    padding: 16px;
-    position: sticky;
-    top: 80px;
+  #dairyDetailContainer {
+    grid-column: 1 / -1;
   }
 
-  .admin-nav-item {
-    display: flex;
-    align-items: center;
+  .grid-4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+  }
+
+  .header-search-wrap {
+    max-width: 220px;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   7. Tablets in Portrait & Mobile Devices (<= 768px)
+   -------------------------------------------------------------------------- */
+@media (max-width: 768px) {
+  .main-wrapper {
+    padding: 12px;
+    padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px)); /* Clearance for mobile bottom nav */
+  }
+
+  .grid-2,
+  .grid-3 {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
+
+  .grid-4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 10px;
-    padding: 10px 12px;
-    border-radius: var(--radius-md);
-    color: var(--text-secondary);
-    font-size: var(--font-sm);
-    font-weight: 600;
-    cursor: pointer;
-    border: none;
-    background: transparent;
+  }
+
+  .map-layout-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 14px;
+  }
+
+  #aavinLeafletMap {
+    height: clamp(300px, 45vh, 420px) !important;
+  }
+
+  .header-search-wrap {
+    display: none;
+  }
+
+  .desktop-nav-bar {
+    display: none;
+  }
+
+  .bottom-nav {
+    display: flex;
+  }
+
+  .brand-title-wrap .sub-title {
+    display: none;
+  }
+
+  .location-ribbon {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .location-ribbon > div:last-child {
     width: 100%;
-    text-align: left;
-    transition: all var(--transition-fast);
+    justify-content: flex-end;
   }
 
-  .admin-nav-item:hover {
-    background-color: var(--bg-muted);
-    color: var(--aavin-primary);
+  /* Modals on Mobile */
+  .modal-backdrop {
+    padding: 10px;
+    align-items: flex-end; /* Slide-up bottom sheet feel or centered */
   }
 
-  .admin-nav-item.active {
-    background-color: var(--aavin-primary-light);
-    color: var(--aavin-primary);
-    font-weight: 700;
+  .modal-dialog {
+    max-height: calc(92dvh - env(safe-area-inset-bottom, 0px));
+    max-height: calc(92vh - env(safe-area-inset-bottom, 0px));
+    padding: clamp(14px, 4vw, 20px);
+    border-radius: var(--radius-lg);
+    width: 100%;
+  }
+
+  /* Hero profile card adjustments */
+  .hero-greeting-wrapper {
+    flex-direction: column;
+    align-items: flex-start !important;
+    gap: 12px !important;
+  }
+
+  /* Role selector max width */
+  .role-badge-selector {
+    max-width: 140px;
+    overflow: hidden;
+  }
+
+  .role-select {
+    max-width: 110px;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   8. Standard Mobile Screens (<= 480px)
+   -------------------------------------------------------------------------- */
+@media (max-width: 480px) {
+  .gov-top-ribbon {
+    padding: 4px 10px;
+    font-size: 10px;
+  }
+
+  .gov-emblem-text {
+    font-size: 9.5px;
+    letter-spacing: 0;
+  }
+
+  .gov-ribbon-actions {
+    gap: 6px;
+    font-size: 10px;
+  }
+
+  .header-container {
+    padding: 8px 10px;
+    gap: 6px;
+  }
+
+  .brand-logo-badge {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+  }
+
+  .brand-title-wrap h1 {
+    font-size: 0.95rem;
+  }
+
+  #headerRegisterBtn {
+    padding: 5px 8px;
+    font-size: 11.5px;
+  }
+
+  .role-badge-selector {
+    padding: 3px 6px;
+    max-width: 120px;
+  }
+
+  .role-select {
+    font-size: 11px;
+    max-width: 90px;
+  }
+
+  .lang-toggle-btn {
+    height: 30px;
+    padding: 0 8px;
+    font-size: 11px;
+  }
+
+  /* Registration Stepper on Mobile */
+  .reg-step-box {
+    padding: 6px 4px !important;
+  }
+
+  .reg-step-title {
+    font-size: 10.5px !important;
+  }
+
+  .reg-step-sub {
+    font-size: 9px !important;
+  }
+
+  /* Form button touch sizing */
+  .btn-lg {
+    padding: 12px 18px;
+    font-size: 14px;
+  }
+
+  .card {
+    padding: 14px;
+    border-radius: var(--radius-md);
+  }
+
+  /* Digital ID Card Mobile Proportion */
+  .digital-id-3d-wrapper {
+    max-width: 100%;
+  }
+
+  .digital-id-3d-card {
+    min-height: 250px;
+  }
+
+  .id-card-face {
+    padding: 14px;
+  }
+
+  /* Action Grid (Home Dashboard) */
+  .btn-action-3d {
+    padding: 12px 8px;
+  }
+
+  .action-icon-wrap {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    margin-bottom: 6px;
+  }
+
+  .action-icon-wrap svg {
+    width: 20px;
+    height: 20px;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   9. Ultra-Compact Mobile Screens (<= 360px - e.g. 320px iPhone SE)
+   -------------------------------------------------------------------------- */
+@media (max-width: 360px) {
+  .gov-top-ribbon {
+    flex-wrap: wrap;
+    gap: 4px;
+    padding: 4px 6px;
+  }
+
+  .gov-ribbon-actions span:last-child {
+    display: none; /* Hide phone number on 320px to prevent ribbon clipping */
+  }
+
+  .brand-title-wrap h1 {
+    font-size: 0.85rem;
+  }
+
+  .header-container {
+    padding: 6px 6px;
+    gap: 4px;
+  }
+
+  #headerRegisterBtn span:last-child {
+    display: none; /* Show icon only on 320px screens */
+  }
+
+  #headerRegisterBtn {
+    padding: 6px 8px;
+  }
+
+  .role-badge-selector {
+    max-width: 95px;
+    padding: 2px 4px;
+  }
+
+  .role-select {
+    font-size: 10.5px;
+    max-width: 70px;
+  }
+
+  .lang-toggle-btn {
+    padding: 0 6px;
+    font-size: 10.5px;
+  }
+
+  .grid-4 {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .card {
+    padding: 12px 10px;
+  }
+
+  .modal-dialog {
+    padding: 12px 10px;
+  }
+
+  /* OTP code box letter spacing on 320px */
+  #inactivityOtpInput,
+  #regEmailOtpCode {
+    font-size: 16px !important;
+    letter-spacing: 2px !important;
+    padding: 8px !important;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   10. Touch & Accessibility Ergonomics
+   -------------------------------------------------------------------------- */
+@media (hover: none) and (pointer: coarse) {
+  /* Prevent hover transform stickiness on mobile touch screens */
+  .card-floating-3d:hover {
+    transform: none;
+  }
+
+  .btn:hover {
+    transform: none;
+  }
+
+  .btn-action-3d:hover {
+    transform: none;
+  }
+
+  .btn,
+  .bottom-nav-item,
+  .lang-toggle-btn,
+  .role-badge-selector {
+    min-height: 38px;
   }
 }

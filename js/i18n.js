@@ -384,6 +384,181 @@ window.I18N = {
     }
   },
 
+  /**
+   * High-accuracy phonetic English to Tamil transliteration engine
+   * Converts Latin characters into Tamil script (e.g., 'Karthik' -> 'கார்த்திக்', 'Suryakala' -> 'சூர்யகலா')
+   */
+  transliterateEnToTa(text) {
+    if (!text || typeof text !== 'string') return '';
+
+    const INITIALS = {
+      'A': 'ஏ', 'B': 'பி', 'C': 'சி', 'D': 'டி', 'E': 'இ',
+      'F': 'எஃப்', 'G': 'ஜி', 'H': 'எச்', 'I': 'ஐ', 'J': 'ஜே',
+      'K': 'கே', 'L': 'எல்', 'M': 'எம்', 'N': 'என்', 'O': 'ஓ',
+      'P': 'பி', 'Q': 'க்யூ', 'R': 'ஆர்', 'S': 'எஸ்', 'T': 'டி',
+      'U': 'யு', 'V': 'வி', 'W': 'டபிள்யூ', 'X': 'எக்ஸ்', 'Y': 'ஒய்', 'Z': 'இசட்'
+    };
+
+    const tokens = text.split(/(\s+|\.+|\-+|\_+)/);
+
+    return tokens.map(token => {
+      if (!token || /^\s+$/.test(token) || /^[\.\-\_]+$/.test(token)) {
+        return token;
+      }
+
+      // Check single character initial (e.g., S., K., M.)
+      if (token.length === 1 && INITIALS[token.toUpperCase()]) {
+        return INITIALS[token.toUpperCase()];
+      }
+
+      let t = token.toLowerCase();
+
+      // Independent Vowels (Uyir Ezhuthukkal)
+      const uyir = {
+        'aai': 'ஆய்', 'aay': 'ஆய்', 'aau': 'ஆவ்', 'aaw': 'ஆவ்',
+        'aa': 'ஆ', 'ee': 'ஈ', 'ii': 'ஈ', 'oo': 'ஊ', 'uu': 'ஊ',
+        'ea': 'ஏ', 'ae': 'ஏ', 'ai': 'ஐ', 'ay': 'ஐ', 'ey': 'ஐ',
+        'au': 'ஔ', 'ow': 'ஔ', 'ou': 'ஔ', 'oa': 'ஓ',
+        'a': 'அ', 'i': 'இ', 'u': 'உ', 'e': 'எ', 'o': 'ஒ'
+      };
+
+      // Vowel Diacritics (Uyirmey Kurigal)
+      const uyirmey = {
+        'aai': 'ாய்', 'aay': 'ாய்', 'aau': 'ாவ்', 'aaw': 'ாவ்',
+        'aa': 'ா', 'ee': 'ீ', 'ii': 'ீ', 'oo': 'ூ', 'uu': 'ூ',
+        'ea': 'ே', 'ae': 'ே', 'ai': 'ை', 'ay': 'ை', 'ey': 'ை',
+        'au': 'ௌ', 'ow': 'ௌ', 'ou': 'ௌ', 'oa': 'ோ',
+        'a': '', 'i': 'ி', 'u': 'ு', 'e': 'ெ', 'o': 'ொ'
+      };
+
+      // Consonants (Mey Ezhuthukkal base)
+      const mey = {
+        'ksh': 'க்ஷ', 'sh': 'ஷ', 'zh': 'ழ', 'zr': 'ழ', 'th': 'த', 'dh': 'த',
+        'ch': 'ச', 'ng': 'ங', 'gn': 'ஞ', 'ny': 'ஞ', 'nj': 'ஞ',
+        'kh': 'க', 'gh': 'க', 'bh': 'ப', 'ph': 'ப',
+        'k': 'க', 'g': 'க', 'c': 'க', 's': 'ச', 'j': 'ஜ',
+        't': 'ட', 'd': 'ட', 'n': 'ந', 'p': 'ப', 'b': 'ப', 'f': 'ப',
+        'm': 'ம', 'y': 'ய', 'r': 'ர', 'l': 'ல', 'v': 'வ', 'w': 'வ', 'h': 'ஹ', 'z': 'ஸ'
+      };
+
+      // Phonetic stems & roots for natural name transliteration
+      const stems = [
+        [/^karthik/i, 'கார்த்திக்'],
+        [/^karthi/i, 'கார்த்தி'],
+        [/^karth/i, 'கார்த்த'],
+        [/^suryakala/i, 'சூர்யகலா'],
+        [/^surya/i, 'சூர்ய'],
+        [/^suresh/i, 'சுரேஷ்'],
+        [/^saravanan/i, 'சரவணன்'],
+        [/^saravan/i, 'சரவண'],
+        [/^gowshik/i, 'கௌசிக்'],
+        [/^gowsik/i, 'கௌசிக்'],
+        [/^gow/i, 'கௌ'],
+        [/^murugan/i, 'முருகன்'],
+        [/^muru/i, 'முரு'],
+        [/^dinesh/i, 'தினேஷ்'],
+        [/^ramesh/i, 'ரமேஷ்'],
+        [/^selvam/i, 'செல்வம்'],
+        [/^selv/i, 'செல்வ'],
+        [/^senthil/i, 'செந்தில்'],
+        [/^senth/i, 'செந்த'],
+        [/^praveen/i, 'பிரவீன்'],
+        [/^prashanth/i, 'பிரசாந்த்'],
+        [/^anand/i, 'ஆனந்த்'],
+        [/^anitha/i, 'அனிதா'],
+        [/^priya/i, 'பிரியா'],
+        [/^vijay/i, 'விஜய்'],
+        [/^kumar/i, 'குமார்'],
+        [/^mani/i, 'மணி'],
+        [/^raja/i, 'ராஜா']
+      ];
+
+      let result = '';
+      let i = 0;
+
+      for (const [rgx, replacement] of stems) {
+        const m = t.match(rgx);
+        if (m) {
+          result += replacement;
+          i = m[0].length;
+          break;
+        }
+      }
+
+      while (i < t.length) {
+        // Match multi-character consonant first
+        let matchedMey = null;
+        let meyLen = 0;
+
+        for (const len of [3, 2, 1]) {
+          const sub = t.substr(i, len);
+          if (mey[sub]) {
+            matchedMey = mey[sub];
+            meyLen = len;
+            break;
+          }
+        }
+
+        if (matchedMey) {
+          let baseMey = matchedMey;
+          // Contextual 'n': word-start uses 'ந', middle/end uses 'ன' or 'ன்'
+          if (baseMey === 'ந' && i > 0) {
+            baseMey = 'ன';
+          }
+
+          i += meyLen;
+
+          // Check if followed by vowel
+          let matchedVowel = null;
+          let vowelLen = 0;
+
+          for (const vlen of [3, 2, 1]) {
+            const vsub = t.substr(i, vlen);
+            if (uyirmey[vsub] !== undefined) {
+              matchedVowel = uyirmey[vsub];
+              vowelLen = vlen;
+              break;
+            }
+          }
+
+          if (matchedVowel !== null) {
+            result += baseMey + matchedVowel;
+            i += vowelLen;
+          } else {
+            // Pure consonant with pulli
+            if (baseMey === 'ன' && i >= t.length) {
+              result += 'ன்';
+            } else {
+              result += baseMey + '\u0BCD';
+            }
+          }
+        } else {
+          // Independent vowel at syllable start
+          let matchedUyir = null;
+          let uyirLen = 0;
+          for (const ulen of [3, 2, 1]) {
+            const usub = t.substr(i, ulen);
+            if (uyir[usub]) {
+              matchedUyir = uyir[usub];
+              uyirLen = ulen;
+              break;
+            }
+          }
+
+          if (matchedUyir) {
+            result += matchedUyir;
+            i += uyirLen;
+          } else {
+            result += t[i];
+            i++;
+          }
+        }
+      }
+
+      return result;
+    }).join('');
+  },
+
   init() {
     const saved = localStorage.getItem('aavin_lang');
     if (saved && (saved === 'ta' || saved === 'en')) {
@@ -391,6 +566,10 @@ window.I18N = {
     }
     document.documentElement.lang = this.currentLang;
   }
+};
+
+window.transliterateEnToTa = function (text) {
+  return window.I18N ? window.I18N.transliterateEnToTa(text) : text;
 };
 
 window.I18N.init();

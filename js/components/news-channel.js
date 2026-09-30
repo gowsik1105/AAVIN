@@ -48,24 +48,31 @@ window.AAVIN_COMPONENTS.NewsChannel = {
 
     if (filtered.length === 0) {
       return `
-        <div class="card card-floating-3d" style="grid-column: 1 / -1; text-align: center; padding: 32px;">
-          <div style="font-size: 36px; margin-bottom: 8px;">📄</div>
-          <h3 style="font-size: 15px; font-weight: 800; color: var(--text-primary);">${lang === 'ta' ? 'அறிவிப்புகள் எதுவும் இல்லை' : 'No Announcements Found'}</h3>
-          <p style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">Try searching with different keywords or filter categories.</p>
+        <div class="card card-floating-3d hover-lift" style="grid-column: 1 / -1; text-align: center; padding: 36px 20px; border: 1.5px dashed var(--border-strong); background: #fafcff;">
+          <div style="width: 56px; height: 56px; border-radius: 16px; background: #e0f2fe; color: #0284c7; display: flex; align-items: center; justify-content: center; margin: 0 auto 14px auto;">
+            ${icon('news', { size: 28, color: '#0284c7' })}
+          </div>
+          <h3 style="font-size: 16px; font-weight: 800; color: var(--text-primary); margin-bottom: 4px;">
+            ${lang === 'ta' ? 'அறிவிப்புகள் எதுவும் கிடைக்கவில்லை' : 'No Announcements Found'}
+          </h3>
+          <p style="font-size: 12.5px; color: var(--text-muted); line-height: 1.4; max-width: 380px; margin: 0 auto;">
+            ${lang === 'ta' ? 'தேடல் சொற்களை மாற்றவோ அல்லது வேறு பிரிவைத் தேர்வு செய்யவோ முயற்சிக்கவும்.' : 'Try searching with different keywords or selecting another category filter.'}
+          </p>
         </div>
       `;
     }
 
     return filtered.map(item => `
-      <div class="card card-floating-3d" style="display: flex; flex-direction: column; justify-content: space-between;">
+      <div class="card card-floating-3d hover-lift" style="display: flex; flex-direction: column; justify-content: space-between;">
         <div>
           <!-- Card Category Badge & Date -->
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
             <span class="badge" style="background: #e0f2fe; color: #0284c7; font-weight: 700;">
               ${this.getCategoryLabel(item.category, lang)}
             </span>
-            <span style="font-size: 11px; color: var(--text-muted); font-weight: 600;">
-              📅 ${item.date}
+            <span style="font-size: 11px; color: var(--text-muted); font-weight: 600; display: flex; align-items: center; gap: 4px;">
+              ${icon('clock', { size: 11, color: 'currentColor' })}
+              <span>${item.date}</span>
             </span>
           </div>
 

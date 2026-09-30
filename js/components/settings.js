@@ -58,7 +58,10 @@ window.AAVIN_COMPONENTS.Settings = {
         <div class="card card-floating-3d" style="margin-bottom: 14px;">
           <div class="card-header">
             <h3 class="card-title">${icon('user', { size: 18, color: '#0b4f8a' })} Account Profile</h3>
-            <button type="button" class="btn btn-secondary btn-sm" onclick="window.AAVIN_APP.navigate('digital_id')">View ID</button>
+            <div style="display: flex; gap: 6px;">
+              <button type="button" class="btn btn-primary btn-sm" onclick="window.AAVIN_APP.navigate('register')">➕ New Registration</button>
+              <button type="button" class="btn btn-secondary btn-sm" onclick="window.AAVIN_APP.navigate('digital_id')">View ID</button>
+            </div>
           </div>
           <div style="display: flex; align-items: center; gap: 14px;">
             <div style="width: 54px; height: 54px; border-radius: 50%; overflow: hidden; border: 2px solid var(--aavin-primary);">

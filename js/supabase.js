@@ -44,13 +44,18 @@
     );
   }
 
+  const defaultUrl = 'https://wmspmyhwsdefvvhwigav.supabase.co';
+  const defaultKey = 'sb_publishable_IKBhtnA1pyeEKD_sVUQ0ug_0q2Aso5t';
+  const validUrl = url || defaultUrl;
+  const validKey = anonKey || defaultKey;
+
   // Initialize client if library is available
   let client = null;
   if (typeof window !== 'undefined' && window.supabase && typeof window.supabase.createClient === 'function') {
     try {
       client = window.supabase.createClient(
-        url || 'https://placeholder.supabase.co',
-        anonKey || 'placeholder-anon-key',
+        validUrl,
+        validKey,
         {
           auth: {
             persistSession: true,

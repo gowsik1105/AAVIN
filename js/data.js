@@ -4,29 +4,7 @@
  */
 
 window.AAVIN_DATA = {
-  currentMember: {
-    id: 'usr-mdu-0841',
-    name_en: 'S. Saravanan',
-    name_ta: 'S. சரவணன்',
-    father_name: 'Marimuthu',
-    memberId: 'TN-MDU-2026-8841',
-    mobile: '98421 76540',
-    districtCode: 'MDU',
-    districtName_en: 'Madurai District',
-    districtName_ta: 'மதுரை மாவட்டம்',
-    sangamId: 'sgm-mdu',
-    sangamName_en: 'Aavin Madurai Thozhilar Sangam',
-    sangamName_ta: 'ஆவின் மதுரை தொழிலாளர் சங்கம்',
-    dairyId: 'dairy-mdu-001',
-    dairyName_en: 'Aavin Madurai Main Dairy',
-    dairyName_ta: 'ஆவின் மதுரை முதன்மை பால் பண்ணை',
-    sangamRegNo: 'TN-MDU-TS-8841',
-    validUntil: '31/12/2028',
-    cattleCount: 6,
-    dailySupplyAvg: '48 Litres',
-    bankVerified: true,
-    avatarUrl: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80'
-  },
+  currentMember: null,
 
   districts: [
     {
@@ -132,34 +110,66 @@ window.AAVIN_DATA = {
 
   issues: [
     {
-      id: 'MDU-ISSUE-1042',
+      id: 'SGM-MDU-1042',
       reporterId: 'usr-mdu-0841',
-      reporterName: 'M. Saravanan (மு. சரவணன்)',
+      reporterName: 'S. Saravanan (S. சரவணன்)',
       districtCode: 'MDU',
+      districtName_en: 'Madurai District',
+      districtName_ta: 'மதுரை மாவட்டம்',
       sangamId: 'sgm-mdu',
       sangamName_en: 'Aavin Madurai Thozhilar Sangam',
-      category: 'catChillingPlant',
-      categoryName_en: 'Main Dairy Pasteurization & Chilling Line',
-      categoryName_ta: 'முதன்மை பால் பண்ணை பதப்படுத்தும் பிரிவு',
-      title_en: 'Madurai Main Dairy Processing Unit 2 Chilling Line Compressor Coil Service Needed',
-      title_ta: 'மதுரை முதன்மை பால் பண்ணை யூனிட் 2 சிலிங் லைன் கம்ப்ரசர் பழுது நீக்கம் தேவை',
-      description: 'The main pasteurization chilling line unit 2 compressor experienced phase voltage fluctuation. Routine maintenance and replacement coil requested to ensure uninterrupted 24/7 milk packaging schedule.',
-      location: 'Aavin Madurai Main Dairy, Sathamangalam',
-      relatedReportsCount: 14,
-      calculatedPriority: 'high',
-      finalPriority: 'high',
-      isAdminVerified: true,
-      verifiedBy: 'Sangam Secretary (Thiru S. Palanivel)',
-      verifiedAt: '10/09/2026, 08:15 AM',
-      forwardedToDept: 'TANGEDCO / TNEB Power & Dairy Engineering Division',
-      forwardedAt: '10/09/2026, 09:30 AM',
-      status: 'forwarded',
+      sangamName_ta: 'ஆவின் மதுரை தொழிலாளர் சங்கம்',
+      category: 'catFatSnf',
+      categoryName_en: 'FAT / SNF Quality Issue',
+      categoryName_ta: 'FAT / SNF தொடர்பான பிரச்சனை',
+      isCustomProblem: false,
+      title_en: 'FAT / SNF Quality Issue - Aavin Madurai Thozhilar Sangam',
+      title_ta: 'கொழுப்பு சத்து (FAT / SNF) அளவு முரண்பாடு மற்றும் லாக்டோமீட்டர் பரிசோதனை',
+      description: 'எங்கள் சங்கத்தில் பால் கொழுப்பு சத்து (FAT / SNF) பரிசோதனையில் முரண்பாடுகள் ஏற்படுகின்றன. தரக்கட்டுப்பாட்டு அதிகாரியை அனுப்பி லாக்டோமீட்டர் மற்றும் அனலைசரை ஆய்வு செய்து சரிசெய்து தருமாறு கேட்டுக்கொள்கிறேன்.',
+      location: 'ஆவின் மதுரை தொழிலாளர் சங்கம், மதுரை',
+      calculatedPriority: 'urgent',
+      finalPriority: 'urgent',
+      evidence: {
+        name: 'Lactometer_Reading_Sep2026.jpg',
+        size: '1.2 MB',
+        isImage: true,
+        dataUrl: 'assets/logo.jpg'
+      },
+      status: 'under_review',
       createdAt: '10/09/2026, 07:10 AM',
       history: [
-        { status: 'submitted', date: '10/09/2026 07:10 AM', actor: 'Member M. Saravanan', note: 'Issue submitted with photo note' },
-        { status: 'admin_verification', date: '10/09/2026 08:00 AM', actor: 'Sangam Admin S. Palanivel', note: 'Verified with Plant Engineering section.' },
-        { status: 'verified', date: '10/09/2026 08:15 AM', actor: 'Sangam Admin S. Palanivel', note: 'Priority marked HIGH (🟡)' },
-        { status: 'forwarded', date: '10/09/2026 09:30 AM', actor: 'District Milk Officer, Madurai', note: 'Forwarded to Dairy Engineering Division. Technical crew assigned.' }
+        { status: 'submitted', date: '10/09/2026 07:10 AM', actor: 'Member S. Saravanan', note: 'Grievance submitted with test slip photo' },
+        { status: 'under_review', date: '10/09/2026 08:00 AM', actor: 'Sangam Secretary Thiru S. Palanivel', note: 'Verified and queued for Quality Wing inspection.' }
+      ]
+    },
+    {
+      id: 'SGM-MDU-1088',
+      reporterId: 'usr-mdu-0841',
+      reporterName: 'S. Saravanan (S. சரவணன்)',
+      districtCode: 'MDU',
+      districtName_en: 'Madurai District',
+      districtName_ta: 'மதுரை மாவட்டம்',
+      sangamId: 'sgm-mdu',
+      sangamName_en: 'Aavin Madurai Thozhilar Sangam',
+      sangamName_ta: 'ஆவின் மதுரை தொழிலாளர் சங்கம்',
+      category: 'catMilkPayment',
+      categoryName_en: 'Milk Payment / Accounts Issue',
+      categoryName_ta: 'பால் பணம் / கணக்கு தொடர்பான பிரச்சனை',
+      isCustomProblem: false,
+      title_en: 'Milk Procurement Settlement DBT Credit Confirmation',
+      title_ta: 'ஆகஸ்ட் மாத 2-வது தவணை பால் பட்டுவாடா நிலுவைத் தொகை வரவு கோரிக்கை',
+      description: 'ஆகஸ்ட் மாதத்திற்கான பால் கொள்முதல் ஊக்கத்தொகை மற்றும் பட்டுவாடா தொகை வங்கி கணக்கில் நேரடி வரவு (DBT) நிலுவையில் உள்ளது. கணக்கு பிரிவில் சரிபார்த்து வரவு வைக்க கோருகிறேன்.',
+      location: 'ஆவின் மதுரை தொழிலாளர் சங்கம், மதுரை',
+      calculatedPriority: 'normal',
+      finalPriority: 'normal',
+      evidence: null,
+      status: 'in_progress',
+      createdAt: '08/09/2026, 09:30 AM',
+      history: [
+        { status: 'submitted', date: '08/09/2026 09:30 AM', actor: 'Member S. Saravanan', note: 'Submitted via Member Portal' },
+        { status: 'under_review', date: '08/09/2026 11:00 AM', actor: 'Sangam Secretary', note: 'Reviewed and forwarded to Union Accounts' },
+        { status: 'assigned', date: '08/09/2026 02:00 PM', actor: 'Union Officer', note: 'Assigned to Bank Reconciliation Desk' },
+        { status: 'in_progress', date: '09/09/2026 10:00 AM', actor: 'Accounts Wing', note: 'Bank IFSC transition verification underway' }
       ]
     }
   ],

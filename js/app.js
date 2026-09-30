@@ -201,6 +201,11 @@ window.AAVIN_APP = {
       case 'privacy':
         html = window.AAVIN_COMPONENTS.Settings ? window.AAVIN_COMPONENTS.Settings.renderPrivacy() : '';
         break;
+      case 'register':
+        if (window.AAVIN_COMPONENTS.Auth) {
+          window.AAVIN_COMPONENTS.Auth.startRegistration();
+        }
+        return;
       case 'more':
         html = this.renderMoreMenu();
         break;
@@ -209,6 +214,9 @@ window.AAVIN_APP = {
     }
 
     mainContainer.innerHTML = html;
+    mainContainer.classList.remove('view-fade-in');
+    void mainContainer.offsetWidth;
+    mainContainer.classList.add('view-fade-in');
     this.updateActiveNavIndicators(tab);
 
     // Initialize Leaflet map if map tab active
@@ -300,6 +308,22 @@ window.AAVIN_APP = {
             </div>
           </div>
 
+          <!-- New Member Registration Portal -->
+          <div class="card card-floating-3d" style="padding: 14px; cursor: pointer; border-left: 4px solid #0284c7; background: #f0f9ff;" onclick="window.AAVIN_APP.navigate('register')">
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+              <div style="display: flex; align-items: center; gap: 12px;">
+                <div style="width: 42px; height: 42px; border-radius: 12px; background: #e0f2fe; color: #0284c7; display: flex; align-items: center; justify-content: center;">
+                  ${icon('user', { size: 22, color: '#0284c7' })}
+                </div>
+                <div>
+                  <strong style="font-size: 14.5px; color: #07355e;">${lang === 'ta' ? 'புதிய உறுப்பினர் பதிவு' : 'New Member Registration'}</strong>
+                  <div style="font-size: 11.5px; color: var(--text-muted);">${lang === 'ta' ? '6-அடுக்கு படிவ பதிவு & உடனடி OTP சரிபார்ப்பு' : '6-Step Digital Application & Mobile OTP Verification'}</div>
+                </div>
+              </div>
+              <span class="badge" style="background: #0284c7; color: #ffffff; font-weight: 800;">Register →</span>
+            </div>
+          </div>
+
           <!-- Settings & Privacy -->
           <div class="card card-floating-3d" style="padding: 14px; cursor: pointer;" onclick="window.AAVIN_APP.navigate('settings')">
             <div style="display: flex; align-items: center; justify-content: space-between;">
@@ -353,6 +377,7 @@ window.AAVIN_APP = {
           <a href="javascript:void(0)" class="desktop-nav-link" onclick="window.AAVIN_APP.navigate('issues')">${icon('issues', { size: 15 })} ${t('navIssues')}</a>
           <a href="javascript:void(0)" class="desktop-nav-link" onclick="window.AAVIN_APP.navigate('digital_id')">${icon('digitalId', { size: 15 })} ${t('navDigitalId')}</a>
           <a href="javascript:void(0)" class="desktop-nav-link" onclick="window.AAVIN_APP.navigate('map')">${icon('map', { size: 15 })} ${t('navMap')}</a>
+          <a href="javascript:void(0)" class="desktop-nav-link" onclick="window.AAVIN_APP.navigate('register')" style="color: #0284c7; font-weight: 800;">${icon('user', { size: 15, color: '#0284c7' })} + Register</a>
           <a href="javascript:void(0)" class="desktop-nav-link" onclick="window.AAVIN_APP.navigate('settings')">${icon('settings', { size: 15 })} Settings</a>
           <a href="javascript:void(0)" class="desktop-nav-link" onclick="window.AAVIN_APP.navigate('help')">${icon('helpCircle', { size: 15 })} ${t('navHelp')}</a>
         `;
@@ -363,6 +388,7 @@ window.AAVIN_APP = {
           <a href="javascript:void(0)" class="desktop-nav-link" onclick="window.AAVIN_APP.navigate('meetings')">${icon('video', { size: 15 })} Meetings</a>
           <a href="javascript:void(0)" class="desktop-nav-link" onclick="window.AAVIN_APP.navigate('news')">${icon('news', { size: 15 })} Publish News</a>
           <a href="javascript:void(0)" class="desktop-nav-link" onclick="window.AAVIN_APP.navigate('map')">${icon('map', { size: 15 })} ${t('navMap')}</a>
+          <a href="javascript:void(0)" class="desktop-nav-link" onclick="window.AAVIN_APP.navigate('register')" style="color: #0284c7; font-weight: 800;">${icon('user', { size: 15, color: '#0284c7' })} + Register</a>
           <a href="javascript:void(0)" class="desktop-nav-link" onclick="window.AAVIN_APP.navigate('settings')">${icon('settings', { size: 15 })} Settings</a>
         `;
       } else if (role === 'district_admin') {

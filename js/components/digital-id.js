@@ -23,8 +23,27 @@ window.AAVIN_COMPONENTS.DigitalId = {
   render() {
     const lang = window.I18N.currentLang;
     const t = (k) => window.I18N.t(k);
-    const member = window.AAVIN_DATA.currentMember;
+    const member = window.AAVIN_DATA.currentMember || (window.AAVIN_SUPABASE_AUTH && window.AAVIN_SUPABASE_AUTH.memberProfile) || null;
     const icon = (name, opts) => window.AAVIN_ICONS ? window.AAVIN_ICONS.render(name, opts) : '';
+
+    if (!member) {
+      return `
+        <div style="min-height: 50vh; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 24px;">
+          <div style="width: 60px; height: 60px; border-radius: 18px; background: #e0f2fe; color: #0284c7; display: flex; align-items: center; justify-content: center; font-size: 26px; margin-bottom: 14px;">
+            🪪
+          </div>
+          <h3 style="font-size: 1.1rem; font-weight: 800; color: #07355e; margin-bottom: 8px;">
+            ${lang === 'ta' ? 'டிஜிட்டல் அட்டைக்கு உள்நுழைக' : 'Digital ID Requires Authentication'}
+          </h3>
+          <p style="font-size: 12.5px; color: var(--text-secondary); max-width: 340px; margin-bottom: 18px;">
+            ${lang === 'ta' ? 'உங்கள் ஸ்மார்ட் உறுப்பினர் அட்டையைப் பார்க்க உள்நுழையவும்.' : 'Please log in to view and download your verified Aavin Smart Digital ID card.'}
+          </p>
+          <button type="button" class="btn btn-primary" onclick="window.AAVIN_COMPONENTS.Auth.currentFlow='login'; window.AAVIN_COMPONENTS.Auth.render();">
+            ${lang === 'ta' ? 'உள்நுழைவுப் பக்கம்' : 'Go to Login'} →
+          </button>
+        </div>
+      `;
+    }
 
     return `
       <div style="max-width: 540px; margin: 0 auto;">

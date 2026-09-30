@@ -9,16 +9,35 @@ window.AAVIN_COMPONENTS.MemberHome = {
   render() {
     const lang = window.I18N.currentLang;
     const t = (k) => window.I18N.t(k);
-    const member = window.AAVIN_DATA.currentMember;
+    const member = window.AAVIN_DATA.currentMember || (window.AAVIN_SUPABASE_AUTH && window.AAVIN_SUPABASE_AUTH.memberProfile) || null;
     const issues = window.AAVIN_STORE.state.issues || [];
     const news = window.AAVIN_STORE.state.news || window.AAVIN_DATA.news || [];
     const meetings = window.AAVIN_STORE.state.meetings || window.AAVIN_DATA.meetings || [];
     const icon = (name, opts) => window.AAVIN_ICONS ? window.AAVIN_ICONS.render(name, opts) : '';
 
-    // Calculate dynamic issue metrics
+    if (!member) {
+      return `
+        <div style="min-height: 60vh; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 24px;">
+          <div style="width: 64px; height: 64px; border-radius: 20px; background: #e0f2fe; color: #0284c7; display: flex; align-items: center; justify-content: center; font-size: 28px; margin-bottom: 16px;">
+            🔒
+          </div>
+          <h3 style="font-size: 1.15rem; font-weight: 800; color: #07355e; margin-bottom: 8px;">
+            ${lang === 'ta' ? 'உறுப்பினர் கணக்கில் உள்நுழைக' : 'Member Authentication Required'}
+          </h3>
+          <p style="font-size: 13px; color: var(--text-secondary); max-width: 360px; margin-bottom: 20px;">
+            ${lang === 'ta' ? 'தகவல்களைக் காண உங்கள் கணக்கில் உள்நுழையவும்.' : 'Please log in with your Aavin member credentials to access your dashboard.'}
+          </p>
+          <button type="button" class="btn btn-primary" onclick="window.AAVIN_COMPONENTS.Auth.currentFlow='login'; window.AAVIN_COMPONENTS.Auth.render();">
+            ${lang === 'ta' ? 'உள்நுழைவுப் பக்கம்' : 'Go to Login'} →
+          </button>
+        </div>
+      `;
+    }
+
+    // Calculate dynamic issue metrics matching 6-stage lifecycle
     const submittedCount = issues.filter(i => i.status === 'submitted').length;
-    const underReviewCount = issues.filter(i => i.status === 'admin_verification' || i.status === 'verified').length;
-    const inProgressCount = issues.filter(i => i.status === 'forwarded' || i.status === 'action_in_progress').length;
+    const underReviewCount = issues.filter(i => i.status === 'under_review' || i.status === 'admin_verification' || i.status === 'verified').length;
+    const inProgressCount = issues.filter(i => i.status === 'assigned' || i.status === 'in_progress' || i.status === 'forwarded' || i.status === 'action_in_progress').length;
     const resolvedCount = issues.filter(i => i.status === 'resolved' || i.status === 'closed').length;
 
     // Greeting logic
@@ -32,9 +51,9 @@ window.AAVIN_COMPONENTS.MemberHome = {
       <div class="location-ribbon">
         <div class="location-pin-wrap">
           ${icon('pin', { size: 18, color: '#0b4f8a' })}
-          <span>${lang === 'ta' ? member.districtName_ta : member.districtName_en}</span>
+          <span>${lang === 'ta' ? (member.districtName_ta || member.district_name || '') : (member.districtName_en || member.district_name || '')}</span>
           <span style="color: var(--text-muted); font-weight: 400;">•</span>
-          <span style="color: var(--text-secondary); font-size: 13px;">${lang === 'ta' ? member.sangamName_ta : member.sangamName_en}</span>
+          <span style="color: var(--text-secondary); font-size: 13px;">${lang === 'ta' ? (member.sangamName_ta || member.sangam_name || '') : (member.sangamName_en || member.sangam_name || '')}</span>
         </div>
         <div style="display: flex; gap: 8px;">
           <button class="btn btn-secondary btn-sm" onclick="window.AAVIN_APP.navigate('map')">
@@ -49,7 +68,7 @@ window.AAVIN_COMPONENTS.MemberHome = {
         <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;">
           <div style="display: flex; align-items: center; gap: 16px;">
             <div style="width: 60px; height: 60px; border-radius: 16px; overflow: hidden; border: 2px solid white; box-shadow: 0 4px 14px rgba(11, 79, 138, 0.25); background: #ffffff; flex-shrink: 0;">
-              <img src="assets/logo.jpg" alt="Aavin Member" style="width: 100%; height: 100%; object-fit: cover;" />
+              <img src="${member.avatarUrl || 'assets/logo.jpg'}" alt="Aavin Member" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.src='assets/logo.jpg'" />
             </div>
             <div>
               <div style="font-size: 12px; font-weight: 800; color: var(--aavin-primary); text-transform: uppercase; letter-spacing: 0.5px;">
@@ -114,6 +133,14 @@ window.AAVIN_COMPONENTS.MemberHome = {
             </div>
             <strong style="font-size: 13px; color: var(--text-primary);">${t('navDocuments')}</strong>
             <span style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">Govt Orders</span>
+          </div>
+
+          <div class="btn-action-3d" onclick="window.AAVIN_APP.navigate('register')">
+            <div class="action-icon-wrap" style="background: #e0f2fe; color: #0b4f8a;">
+              ${icon('user', { size: 24, color: '#0b4f8a' })}
+            </div>
+            <strong style="font-size: 13px; color: var(--text-primary);">${lang === 'ta' ? 'புதிய பதிவு' : 'New Registration'}</strong>
+            <span style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">6-Step Stepper</span>
           </div>
 
         </div>

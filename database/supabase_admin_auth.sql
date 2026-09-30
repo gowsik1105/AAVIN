@@ -94,6 +94,21 @@ RETURNS BOOLEAN AS $$
 $$ LANGUAGE SQL SECURITY DEFINER STABLE;
 
 -- ------------------------------------------------------------------------------
+-- 2.1 SECURITY DEFINER RPC: RESOLVE MOBILE NUMBER TO EMAIL FOR MEMBER LOGIN
+-- ------------------------------------------------------------------------------
+-- Securely resolves a 10-digit mobile number to an email address for GoTrue auth
+-- without exposing any other profile fields or weakening profiles table RLS.
+CREATE OR REPLACE FUNCTION public.get_email_by_phone(lookup_phone TEXT)
+RETURNS TEXT AS $$
+    SELECT email FROM public.profiles 
+    WHERE regexp_replace(COALESCE(phone, ''), '\D', '', 'g') = regexp_replace(COALESCE(lookup_phone, ''), '\D', '', 'g') 
+      AND is_active = TRUE 
+    LIMIT 1;
+$$ LANGUAGE SQL SECURITY DEFINER STABLE;
+
+GRANT EXECUTE ON FUNCTION public.get_email_by_phone(TEXT) TO anon, authenticated, service_role;
+
+-- ------------------------------------------------------------------------------
 -- 3. ROW LEVEL SECURITY (RLS) POLICIES
 -- ------------------------------------------------------------------------------
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
@@ -225,3 +240,20 @@ SELECT
 FROM auth.users WHERE email = 'aavinsangam@admin.com'
 ON CONFLICT (id) DO UPDATE 
 SET role = 'admin', admin_type = 'sangam', sangam_id = 'sgm-mdu', updated_at = NOW();
+
+-- ------------------------------------------------------------------------------
+-- 6. ONE-CLICK EMAIL CONFIRMATION FOR THE 3 APPROVED ADMIN ACCOUNTS
+-- ------------------------------------------------------------------------------
+-- If Supabase has "Confirm email" enabled in Auth settings and admin accounts
+-- were created without clicking the verification email, execute this query:
+UPDATE auth.users 
+SET email_confirmed_at = NOW(), 
+    confirmed_at = NOW(),
+    updated_at = NOW()
+WHERE email IN (
+    'gowsik1105@gmail.com',
+    'aavindis@admin.com',
+    'aavinsangam@admin.com'
+) 
+AND email_confirmed_at IS NULL;
+

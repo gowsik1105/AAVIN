@@ -2,7 +2,7 @@
 <html lang="ta">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>Aavin Sangam | ஆவின் சங்கம் | Govt of Tamil Nadu</title>
   <meta name="description" content="Official government digital cooperative platform connecting Aavin dairy members, Sangam administrators, district officers, and Tamil Nadu government officials." />
   <meta name="theme-color" content="#07355e" />
@@ -70,9 +70,24 @@
           </div>
         </div>
 
-        <!-- Header Controls: Role Switcher, Bilingual Toggle, Notifications -->
+        <!-- Header Controls: Registration CTA, Role Switcher, Bilingual Toggle, Notifications -->
         <div style="display: flex; align-items: center; gap: 8px;">
           
+          <!-- Direct New Member Registration CTA -->
+          <button 
+            type="button" 
+            id="headerRegisterBtn" 
+            data-action="start-registration"
+            class="btn btn-sm" 
+            style="background: linear-gradient(135deg, #0284c7, #0b4f8a); color: #ffffff; font-weight: 800; border: none; padding: 6px 12px; border-radius: var(--radius-full); box-shadow: 0 2px 8px rgba(11, 79, 138, 0.25); display: flex; align-items: center; gap: 4px; cursor: pointer; white-space: nowrap; pointer-events: auto; position: relative; z-index: 10;"
+            onclick="event.preventDefault(); event.stopPropagation(); window.AAVIN_COMPONENTS.Auth.startRegistration();"
+            onkeydown="if(event.key==='Enter'||event.key===' '||event.code==='Space'){ event.preventDefault(); event.stopPropagation(); window.AAVIN_COMPONENTS.Auth.startRegistration(); }"
+            title="Open New Member Registration Stepper"
+          >
+            <span>📝</span>
+            <span>பதிவு (Register)</span>
+          </button>
+
           <!-- Interactive Role Switcher -->
           <div class="role-badge-selector">
             <span id="roleIcon"></span>
@@ -124,8 +139,8 @@
   <!-- Leaflet Map Engine -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 
-  <!-- Supabase JS Client (Official Cloud SDK) -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- Supabase JS Client (Official SDK - Local Vendor with CDN Fallback) -->
+  <script src="js/vendor/supabase.js" onerror="this.onerror=null;this.src='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';"></script>
 
   <!-- Scripts in Topological Dependency Order -->
   <script src="js/i18n.js"></script>
@@ -134,6 +149,7 @@
   <script src="js/store.js"></script>
   <script src="js/rbac.js"></script>
   <script src="js/components/icons.js"></script>
+  <script src="/api/config.js"></script>
   <script src="js/supabase.js"></script>
   <script src="js/supabase-auth.js"></script>
   <script src="js/components/admin-auth.js"></script>

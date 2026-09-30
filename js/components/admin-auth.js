@@ -12,29 +12,28 @@ window.AAVIN_COMPONENTS = window.AAVIN_COMPONENTS || {};
 window.AAVIN_COMPONENTS.AdminAuth = {
   isLoading: false,
   errorMessage: '',
-  selectedRolePreset: 'tamil_nadu_admin',
+  enteredEmail: '',
+  isUnconfirmedEmail: false,
 
-  setRolePreset(role) {
-    this.selectedRolePreset = role;
-    const emailField = document.getElementById('adminAuthEmail');
-    if (emailField) {
-      if (role === 'tamil_nadu_admin' || role === 'admin') emailField.value = 'gowsik1105@gmail.com';
-      else if (role === 'district_admin') emailField.value = 'aavindis@admin.com';
-      else if (role === 'sangam_admin') emailField.value = 'aavinsangam@admin.com';
+  showLoginModal(targetRole = null, keepError = false) {
+    if (!keepError) {
+      this.errorMessage = '';
+      this.isUnconfirmedEmail = false;
     }
-    document.querySelectorAll('.admin-role-preset-chip').forEach(chip => {
-      chip.classList.toggle('active', chip.dataset.role === role);
-    });
-  },
-
-  showLoginModal(targetRole = 'tamil_nadu_admin') {
-    this.selectedRolePreset = targetRole;
-    this.errorMessage = '';
     const icon = (name, opts) => window.AAVIN_ICONS ? window.AAVIN_ICONS.render(name, opts) : '';
 
-    let defaultEmail = 'gowsik1105@gmail.com';
-    if (targetRole === 'district_admin') defaultEmail = 'aavindis@admin.com';
-    else if (targetRole === 'sangam_admin') defaultEmail = 'aavinsangam@admin.com';
+    let roleTitle = 'Aavin Admin Portal';
+    let roleSubtitle = 'Official Approved Administrator Access';
+    if (targetRole === 'tamil_nadu_admin' || targetRole === 'state_admin') {
+      roleTitle = 'Tamil Nadu State Admin Portal';
+      roleSubtitle = 'State Headquarters Access';
+    } else if (targetRole === 'district_admin') {
+      roleTitle = 'District Admin Portal';
+      roleSubtitle = 'District Operations & Processing Plants';
+    } else if (targetRole === 'sangam_admin') {
+      roleTitle = 'Sangam Admin Portal';
+      roleSubtitle = 'Primary Cooperative Sangam Administration';
+    }
 
     const html = `
       <div class="modal-dialog" style="max-width: 460px;">
@@ -44,76 +43,76 @@ window.AAVIN_COMPONENTS.AdminAuth = {
               ${icon('gov', { size: 18, color: '#ffffff' })}
             </div>
             <div>
-              <h3 style="font-size: 15px; color: #07355e; font-weight: 800;">Aavin Admin Portal</h3>
-              <div style="font-size: 11px; color: var(--text-muted);">Official Approved Administrator Access</div>
+              <h3 style="font-size: 15px; color: #07355e; font-weight: 800;">${roleTitle}</h3>
+              <div style="font-size: 11px; color: var(--text-muted);">${roleSubtitle}</div>
             </div>
           </div>
           <button type="button" class="btn btn-sm btn-secondary" onclick="window.AAVIN_APP.closeModal()">✕</button>
         </div>
 
         <div class="modal-body">
-          <!-- Role Selector Tabs -->
-          <div style="display: flex; gap: 6px; margin-bottom: 16px; background: #f1f5f9; padding: 4px; border-radius: 10px;">
-            <button type="button" class="segmented-control-btn admin-role-preset-chip ${this.selectedRolePreset === 'tamil_nadu_admin' ? 'active' : ''}" data-role="tamil_nadu_admin" onclick="window.AAVIN_COMPONENTS.AdminAuth.setRolePreset('tamil_nadu_admin')" style="font-size: 11px;">
-              👑 Tamil Nadu Admin
-            </button>
-            <button type="button" class="segmented-control-btn admin-role-preset-chip ${this.selectedRolePreset === 'district_admin' ? 'active' : ''}" data-role="district_admin" onclick="window.AAVIN_COMPONENTS.AdminAuth.setRolePreset('district_admin')" style="font-size: 11px;">
-              🏛️ District Admin
-            </button>
-            <button type="button" class="segmented-control-btn admin-role-preset-chip ${this.selectedRolePreset === 'sangam_admin' ? 'active' : ''}" data-role="sangam_admin" onclick="window.AAVIN_COMPONENTS.AdminAuth.setRolePreset('sangam_admin')" style="font-size: 11px;">
-              🏢 Sangam Admin
-            </button>
-          </div>
-
           ${this.errorMessage ? `
             <div style="background: #fee2e2; border: 1px solid #fecdd3; border-radius: 8px; padding: 10px 12px; font-size: 12px; color: #dc2626; font-weight: 700; margin-bottom: 14px; line-height: 1.4;">
               ⚠️ ${this.errorMessage}
+              ${this.isUnconfirmedEmail ? `
+                <div style="margin-top: 8px;">
+                  <button type="button" class="btn btn-sm btn-secondary" onclick="window.AAVIN_COMPONENTS.AdminAuth.handleResendConfirmation()" style="font-size: 11.5px; font-weight: 700; background: #ffffff;">
+                    📩 Resend Verification Link to Inbox
+                  </button>
+                </div>
+              ` : ''}
             </div>
           ` : ''}
 
-          <!-- Email Input -->
-          <div style="margin-bottom: 14px;">
-            <label style="font-size: 12px; font-weight: 700; color: var(--text-secondary); display: block; margin-bottom: 4px;">
-              Admin Email Address *
-            </label>
-            <input 
-              type="email" 
-              id="adminAuthEmail" 
-              value="${defaultEmail}" 
-              placeholder="admin@example.com" 
-              style="width: 100%; padding: 10px 12px; border-radius: 8px; border: 1.5px solid var(--border-strong); font-size: 13.5px; outline: none;"
-            />
-          </div>
-
-          <!-- Password Input -->
-          <div style="margin-bottom: 14px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-              <label style="font-size: 12px; font-weight: 700; color: var(--text-secondary);">
-                Password *
+          <form onsubmit="event.preventDefault(); window.AAVIN_COMPONENTS.AdminAuth.handleLoginSubmit();">
+            <!-- Email Input -->
+            <div style="margin-bottom: 14px;">
+              <label style="font-size: 12px; font-weight: 700; color: var(--text-secondary); display: block; margin-bottom: 4px;">
+                Admin Email Address (நிர்வாக மின்னஞ்சல்) *
               </label>
-              <a href="javascript:void(0)" onclick="window.AAVIN_COMPONENTS.AdminAuth.showForgotPasswordModal()" style="font-size: 11.5px; color: var(--aavin-accent); font-weight: 700; text-decoration: none;">
-                Forgot Password?
-              </a>
-            </div>
-            <div style="position: relative;">
               <input 
-                type="password" 
-                id="adminAuthPassword" 
-                placeholder="Enter your secure password" 
-                style="width: 100%; padding: 10px 40px 10px 12px; border-radius: 8px; border: 1.5px solid var(--border-strong); font-size: 13.5px; outline: none;"
-                onkeydown="if(event.key==='Enter') window.AAVIN_COMPONENTS.AdminAuth.handleLoginSubmit()"
+                type="email" 
+                id="adminAuthEmail" 
+                value="${this.enteredEmail || ''}" 
+                placeholder="e.g. gowsik1105@gmail.com, aavindis@admin.com..." 
+                required
+                autocomplete="username"
+                style="width: 100%; padding: 10px 12px; border-radius: 8px; border: 1.5px solid var(--border-strong); font-size: 13.5px; outline: none;" 
+                oninput="window.AAVIN_COMPONENTS.AdminAuth.enteredEmail = this.value;"
               />
-              <button type="button" onclick="const p = document.getElementById('adminAuthPassword'); p.type = p.type==='password'?'text':'password';" style="position: absolute; right: 10px; top: 10px; background: none; border: none; cursor: pointer; color: var(--text-muted); font-size: 14px;">
-                👁️
-              </button>
             </div>
-          </div>
 
-          <!-- Submit CTA -->
-          <button type="button" class="btn btn-primary btn-full btn-lg" onclick="window.AAVIN_COMPONENTS.AdminAuth.handleLoginSubmit()" ${this.isLoading ? 'disabled' : ''} style="margin-top: 6px;">
-            ${icon('shieldCheck', { size: 16, color: '#ffffff' })}
-            <span>${this.isLoading ? 'Verifying with Supabase...' : 'Sign In to Admin Dashboard →'}</span>
-          </button>
+            <!-- Password Input -->
+            <div style="margin-bottom: 14px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                <label style="font-size: 12px; font-weight: 700; color: var(--text-secondary);">
+                  Password (கடவுச்சொல்) *
+                </label>
+                <a href="javascript:void(0)" onclick="window.AAVIN_COMPONENTS.AdminAuth.showForgotPasswordModal()" style="font-size: 11.5px; color: var(--aavin-accent); font-weight: 700; text-decoration: none;">
+                  Forgot Password?
+                </a>
+              </div>
+              <div style="position: relative;">
+                <input 
+                  type="password" 
+                  id="adminAuthPassword" 
+                  placeholder="Enter your admin password" 
+                  required
+                  autocomplete="current-password"
+                  style="width: 100%; padding: 10px 40px 10px 12px; border-radius: 8px; border: 1.5px solid var(--border-strong); font-size: 13.5px; outline: none;" 
+                />
+                <button type="button" onclick="const p = document.getElementById('adminAuthPassword'); p.type = p.type==='password'?'text':'password';" style="position: absolute; right: 10px; top: 10px; background: none; border: none; cursor: pointer; color: var(--text-muted); font-size: 14px;">
+                  👁️
+                </button>
+              </div>
+            </div>
+
+            <!-- Submit CTA -->
+            <button type="submit" class="btn btn-primary btn-full btn-lg" ${this.isLoading ? 'disabled' : ''} style="margin-top: 6px;">
+              ${icon('shieldCheck', { size: 16, color: '#ffffff' })}
+              <span>${this.isLoading ? 'Authenticating with Supabase...' : 'Sign In to Admin Dashboard →'}</span>
+            </button>
+          </form>
 
           <div style="margin-top: 14px; text-align: center; font-size: 11.5px; color: var(--text-muted); line-height: 1.4;">
             🔒 Authenticated securely via Supabase Auth & PostgreSQL Row Level Security (RLS).
@@ -128,35 +127,80 @@ window.AAVIN_COMPONENTS.AdminAuth = {
   async handleLoginSubmit() {
     if (this.isLoading) return;
 
-    const email = (document.getElementById('adminAuthEmail')?.value || '').trim();
-    const pass = (document.getElementById('adminAuthPassword')?.value || '').trim();
+    const email = (document.getElementById('adminAuthEmail')?.value || this.enteredEmail || '').trim();
+    const pass = document.getElementById('adminAuthPassword')?.value || '';
+
+    this.enteredEmail = email;
 
     if (!email || !pass) {
-      this.errorMessage = 'Please enter both email and password.';
-      this.showLoginModal(this.selectedRolePreset);
+      this.errorMessage = 'Please enter both your admin email and password.';
+      this.showLoginModal(null, true);
       return;
     }
 
     this.isLoading = true;
-    this.showLoginModal(this.selectedRolePreset);
+    this.showLoginModal(null, true);
 
     try {
+      if (window.AAVIN_SUPABASE_AUTH && typeof window.AAVIN_SUPABASE_AUTH.ensureReady === 'function') {
+        await window.AAVIN_SUPABASE_AUTH.ensureReady();
+      }
       const res = await window.AAVIN_SUPABASE_AUTH.signInAdmin(email, pass);
       this.isLoading = false;
 
       if (res.success) {
+        this.enteredEmail = '';
+        this.errorMessage = '';
+        this.isUnconfirmedEmail = false;
         window.AAVIN_APP.closeModal();
-        window.AAVIN_APP.renderNavigation();
-        window.AAVIN_APP.renderCurrentView();
-        window.AAVIN_APP.showToast(`Logged in as ${res.profile.fullName} (${res.profile.role})`);
+
+        if (res.requireInactivityOtp) {
+          window.AAVIN_SUPABASE_AUTH.showInactivityOtpModal(res);
+        } else {
+          if (window.AAVIN_COMPONENTS && window.AAVIN_COMPONENTS.Auth) {
+            window.AAVIN_COMPONENTS.Auth.currentFlow = 'home';
+          }
+          const header = document.querySelector('.app-header');
+          const bottomNav = document.getElementById('mobileBottomNav');
+          if (header) header.style.display = '';
+          if (bottomNav) bottomNav.style.display = '';
+
+          window.AAVIN_APP.renderNavigation();
+          window.AAVIN_APP.renderCurrentView();
+          window.AAVIN_APP.updateHeaderBadges();
+          window.AAVIN_APP.showToast(`Logged in as ${res.profile?.fullName || 'Admin'} (${res.profile?.role || 'admin'})`);
+        }
       } else {
-        this.errorMessage = res.error || 'Authentication failed. Check credentials.';
-        this.showLoginModal(this.selectedRolePreset);
+        this.errorMessage = res.error || 'Authentication failed. Please check your credentials.';
+        this.isUnconfirmedEmail = Boolean(res.isUnconfirmed);
+        this.showLoginModal(null, true);
       }
     } catch (err) {
       this.isLoading = false;
       this.errorMessage = err.message || 'Authentication failed. Please try again.';
-      this.showLoginModal(this.selectedRolePreset);
+      this.isUnconfirmedEmail = false;
+      this.showLoginModal(null, true);
+    }
+  },
+
+  async handleResendConfirmation() {
+    const email = (document.getElementById('adminAuthEmail')?.value || this.enteredEmail || '').trim();
+    if (!email) {
+      if (window.AAVIN_APP && window.AAVIN_APP.showToast) {
+        window.AAVIN_APP.showToast('Please enter your admin email address.');
+      }
+      return;
+    }
+
+    const res = await window.AAVIN_SUPABASE_AUTH.resendConfirmationEmail(email);
+    if (res.success) {
+      if (window.AAVIN_APP && window.AAVIN_APP.showToast) {
+        window.AAVIN_APP.showToast(res.message || 'Verification link resent to your email.');
+      }
+    } else {
+      if (window.AAVIN_APP && window.AAVIN_APP.showToast) {
+        window.AAVIN_APP.showToast(`Error: ${res.error}`);
+      }
     }
   },
 
@@ -210,13 +254,13 @@ window.AAVIN_COMPONENTS.AdminAuth = {
       <div class="modal-dialog" style="max-width: 440px;">
         <div class="modal-header" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;">
           <h3 style="font-size: 15px; color: var(--aavin-primary); font-weight: 800;">
-            🔒 Set New Admin Password
+            🔒 Set New Password (புதிய கடவுச்சொல்)
           </h3>
           <button type="button" class="btn btn-sm btn-secondary" onclick="window.AAVIN_APP.closeModal()">✕</button>
         </div>
         <div class="modal-body">
           <p style="font-size: 12.5px; color: var(--text-secondary); line-height: 1.4; margin-bottom: 14px;">
-            Your recovery session is verified. Enter a new secure password for your administrator account.
+            Your recovery session is verified. Enter your new password below.
           </p>
 
           <div style="margin-bottom: 12px;">
@@ -254,8 +298,11 @@ window.AAVIN_COMPONENTS.AdminAuth = {
     const res = await window.AAVIN_SUPABASE_AUTH.updatePassword(pass);
     if (res.success) {
       window.AAVIN_APP.closeModal();
-      window.AAVIN_APP.showToast('Password updated! Please log in.');
-      this.showLoginModal();
+      window.AAVIN_APP.showToast('Password updated! Please log in with your new password.');
+      if (window.AAVIN_COMPONENTS && window.AAVIN_COMPONENTS.Auth) {
+        window.AAVIN_COMPONENTS.Auth.currentFlow = 'login';
+        window.AAVIN_COMPONENTS.Auth.render();
+      }
     } else {
       window.AAVIN_APP.showToast(res.error || 'Failed to update password');
     }

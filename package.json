@@ -1,0 +1,16 @@
+{
+  "name": "aavin-sangam",
+  "version": "2.0.0",
+  "description": "Aavin Sangam Digital Dairy Platform",
+  "private": true,
+  "scripts": {
+    "dev": "powershell -ExecutionPolicy Bypass -File ./server.ps1",
+    "start": "powershell -ExecutionPolicy Bypass -File ./server.ps1"
+  },
+  "engines": {
+    "node": ">=18.x"
+  },
+  "dependencies": {
+    "nodemailer": "^6.9.13"
+  }
+}

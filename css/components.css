@@ -519,3 +519,47 @@
   border-color: var(--aavin-primary);
   box-shadow: 0 2px 8px rgba(11, 79, 138, 0.25);
 }
+
+/* ==========================================================================
+   MICRO-INTERACTION & TACTILE DEPTH ENHANCEMENTS
+   ========================================================================== */
+.btn {
+  position: relative;
+  overflow: hidden;
+  will-change: transform, box-shadow;
+}
+
+.btn::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.12);
+  opacity: 0;
+  pointer-events: none !important;
+  transition: opacity var(--transition-fast);
+}
+
+.btn:hover::after {
+  opacity: 1;
+}
+
+.btn:active {
+  opacity: 0.88;
+  filter: brightness(0.96);
+}
+
+/* Interactive Card Hover Polish */
+.card-floating-3d {
+  transition: transform 0.24s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.24s ease, border-color 0.24s ease;
+}
+
+.card-floating-3d:hover {
+  border-color: var(--aavin-primary-border);
+}
+
+/* High-Contrast Accessible Touch Targets (Minimum 44px for farmer-friendly UX) */
+.touch-target-friendly {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+}

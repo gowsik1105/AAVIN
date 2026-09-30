@@ -127,16 +127,23 @@ window.AAVIN_COMPONENTS.AdminPortals = {
               </select>
             </div>
 
-            <button type="button" class="btn btn-secondary btn-sm" onclick="window.AAVIN_COMPONENTS.AdminPortals.loadUsers()">
-              🔄 Refresh Users
-            </button>
+            <div style="display: flex; gap: 8px;">
+              <button type="button" class="btn btn-primary btn-sm" onclick="window.AAVIN_APP.navigate('register')">
+                ${icon('plus', { size: 14, color: '#ffffff' })}
+                <span>New Member Registration</span>
+              </button>
+              <button type="button" class="btn btn-secondary btn-sm" onclick="window.AAVIN_COMPONENTS.AdminPortals.loadUsers()">
+                ${icon('refresh', { size: 14, color: '#0b4f8a' })}
+                <span>Refresh Users</span>
+              </button>
+            </div>
           </div>
         </div>
 
         <!-- Users Table -->
         <div class="card card-floating-3d" style="padding: 0; overflow: hidden;">
-          <div style="overflow-x: auto;">
-            <table style="width: 100%; border-collapse: collapse; font-size: 12.5px; text-align: left;">
+          <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+            <table style="width: 100%; min-width: 680px; border-collapse: collapse; font-size: 12.5px; text-align: left;">
               <thead>
                 <tr style="background: #f8fafc; border-bottom: 1.5px solid var(--border-subtle); color: var(--text-secondary); font-size: 11.5px; text-transform: uppercase;">
                   <th style="padding: 12px 14px;">User / Email</th>
@@ -156,11 +163,11 @@ window.AAVIN_COMPONENTS.AdminPortals = {
                 ` : filteredUsers.map(u => {
                   const isAdmin = window.AAVIN_RBAC.isAdmin(u.role);
                   return `
-                    <tr style="border-bottom: 1px solid var(--border-subtle); background: ${u.is_active === false ? '#fff1f2' : '#ffffff'};">
+                    <tr style="border-bottom: 1px solid var(--border-subtle); background: ${u.is_active === false ? '#fff1f2' : '#ffffff'}; transition: background 0.15s ease;">
                       <td style="padding: 12px 14px;">
                         <div style="font-weight: 800; color: var(--text-primary); font-size: 13px;">${u.full_name || 'Member'}</div>
                         <div style="font-size: 11.5px; color: var(--text-muted);">${u.email}</div>
-                        ${u.phone ? `<div style="font-size: 11px; color: var(--text-secondary);">📱 +91 ${u.phone}</div>` : ''}
+                        ${u.phone ? `<div style="font-size: 11px; color: var(--text-secondary); display: flex; align-items: center; gap: 4px; margin-top: 2px;">${icon('phone', { size: 11, color: '#64748b' })} +91 ${u.phone}</div>` : ''}
                       </td>
                       <td style="padding: 12px 14px;">
                         <div style="font-weight: 700; color: var(--aavin-primary);">${u.district_name || 'Madurai District'}</div>
@@ -168,7 +175,7 @@ window.AAVIN_COMPONENTS.AdminPortals = {
                       </td>
                       <td style="padding: 12px 14px;">
                         ${u.is_active !== false ? `
-                          <span class="badge badge-normal" style="background: #ecfdf5; color: #059669;">✓ Active</span>
+                          <span class="badge badge-normal" style="background: #ecfdf5; color: #059669; display: inline-flex; align-items: center; gap: 4px;">${icon('check', { size: 11, color: '#059669' })} Active</span>
                         ` : `
                           <span class="badge" style="background: #fee2e2; color: #dc2626;">Deactivated</span>
                         `}
@@ -176,7 +183,7 @@ window.AAVIN_COMPONENTS.AdminPortals = {
                       <td style="padding: 12px 14px;">
                         <select 
                           onchange="window.AAVIN_COMPONENTS.AdminPortals.handleRoleChange('${u.id}', this.value)"
-                          style="padding: 4px 8px; border-radius: 6px; border: 1.5px solid ${isAdmin ? '#7c3aed' : 'var(--border-strong)'}; font-size: 12px; font-weight: 700; background: ${isAdmin ? '#faf5ff' : '#ffffff'}; color: ${isAdmin ? '#6b21a8' : 'var(--text-primary)'};"
+                          style="padding: 4px 8px; border-radius: 6px; border: 1.5px solid ${isAdmin ? '#7c3aed' : 'var(--border-strong)'}; font-size: 12px; font-weight: 700; background: ${isAdmin ? '#faf5ff' : '#ffffff'}; color: ${isAdmin ? '#6b21a8' : 'var(--text-primary)'}; cursor: pointer;"
                         >
                           <option value="user" ${u.role === 'user' || u.role === 'member' ? 'selected' : ''}>User (Member)</option>
                           <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>System Admin</option>
@@ -224,16 +231,16 @@ window.AAVIN_COMPONENTS.AdminPortals = {
           <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 10px;">
             <div>
               <div style="display: flex; align-items: center; gap: 8px;">
-                <span class="badge" style="background: #f3e8ff; color: #7c3aed; font-weight: 800;">
-                  👑 ADMIN DASHBOARD • SUPABASE DB VERIFIED
+                <span class="badge" style="background: #f3e8ff; color: #7c3aed; font-weight: 800; display: inline-flex; align-items: center; gap: 4px;">
+                  ${icon('award', { size: 14, color: '#7c3aed' })} ADMIN DASHBOARD • SUPABASE DB VERIFIED
                 </span>
-                <span class="badge badge-normal">✓ Role: ${admin.role}</span>
+                <span class="badge badge-normal">${icon('check', { size: 11, color: '#059669' })} Role: ${admin.role}</span>
               </div>
               <h2 style="font-size: 1.35rem; color: #4c1d95; font-weight: 800; margin-top: 6px;">
                 Aavin Cooperative Command & Administration
               </h2>
               <p style="font-size: 12.5px; color: var(--text-muted); margin-top: 2px;">
-                👤 Officer: <strong>${admin.fullName}</strong> • 📧 ${admin.email}
+                Officer: <strong>${admin.fullName}</strong> • ${admin.email}
               </p>
             </div>
             <div style="display: flex; gap: 8px;">
@@ -242,7 +249,7 @@ window.AAVIN_COMPONENTS.AdminPortals = {
                 <span>Main Dairy Explorer</span>
               </button>
               <button type="button" class="btn btn-danger btn-sm" onclick="window.AAVIN_SUPABASE_AUTH.signOutAdmin()">
-                🚪 Log Out
+                <span>Log Out</span>
               </button>
             </div>
           </div>
@@ -253,18 +260,20 @@ window.AAVIN_COMPONENTS.AdminPortals = {
           <button 
             type="button" 
             class="segmented-control-btn ${this.activeAdminSubTab === 'overview' ? 'active' : ''}" 
-            style="flex: 1; font-size: 12px; font-weight: 700;" 
+            style="flex: 1; font-size: 12px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; gap: 6px;" 
             onclick="window.AAVIN_COMPONENTS.AdminPortals.setAdminSubTab('overview')"
           >
-            📊 System Overview
+            ${icon('analytics', { size: 14, color: this.activeAdminSubTab === 'overview' ? '#0b4f8a' : '#64748b' })}
+            <span>System Overview</span>
           </button>
           <button 
             type="button" 
             class="segmented-control-btn ${this.activeAdminSubTab === 'users' ? 'active' : ''}" 
-            style="flex: 1; font-size: 12px; font-weight: 700;" 
+            style="flex: 1; font-size: 12px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; gap: 6px;" 
             onclick="window.AAVIN_COMPONENTS.AdminPortals.setAdminSubTab('users')"
           >
-            👥 User Management
+            ${icon('user', { size: 14, color: this.activeAdminSubTab === 'users' ? '#0b4f8a' : '#64748b' })}
+            <span>User Management</span>
           </button>
         </div>
 
@@ -352,24 +361,25 @@ window.AAVIN_COMPONENTS.AdminPortals = {
           <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 10px;">
             <div>
               <div style="display: flex; align-items: center; gap: 8px;">
-                <span class="badge" style="background: #ffedd5; color: #ea580c; font-weight: 800;">
-                  🏛️ DISTRICT ADMIN PORTAL • SUPABASE AUTH
+                <span class="badge" style="background: #ffedd5; color: #ea580c; font-weight: 800; display: inline-flex; align-items: center; gap: 4px;">
+                  ${icon('admin', { size: 14, color: '#ea580c' })} DISTRICT ADMIN PORTAL • SUPABASE AUTH
                 </span>
-                <span class="badge badge-normal">✓ ${admin.districtName || 'Madurai'} Union</span>
+                <span class="badge badge-normal">${icon('check', { size: 11, color: '#059669' })} ${admin.districtName || 'Madurai'} Union</span>
               </div>
               <h2 style="font-size: 1.35rem; color: #9a3412; font-weight: 800; margin-top: 6px;">
                 ${admin.districtName || 'Madurai District'} Cooperative Union HQ
               </h2>
               <p style="font-size: 12.5px; color: var(--text-muted); margin-top: 2px;">
-                👤 District Officer: <strong>${admin.fullName}</strong> • 📧 ${admin.email}
+                District Officer: <strong>${admin.fullName}</strong> • ${admin.email}
               </p>
             </div>
             <div style="display: flex; gap: 8px;">
               <button type="button" class="btn btn-secondary btn-sm" onclick="window.AAVIN_COMPONENTS.AdminPortals.setAdminSubTab('users')">
-                👥 Manage Users
+                ${icon('user', { size: 14, color: '#0b4f8a' })}
+                <span>Manage Users</span>
               </button>
               <button type="button" class="btn btn-danger btn-sm" onclick="window.AAVIN_SUPABASE_AUTH.signOutAdmin()">
-                🚪 Admin Sign Out
+                <span>Admin Sign Out</span>
               </button>
             </div>
           </div>
@@ -380,48 +390,106 @@ window.AAVIN_COMPONENTS.AdminPortals = {
           <button 
             type="button" 
             class="segmented-control-btn ${this.activeAdminSubTab === 'overview' ? 'active' : ''}" 
-            style="flex: 1; font-size: 12px; font-weight: 700;" 
+            style="flex: 1; font-size: 12px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; gap: 6px;" 
             onclick="window.AAVIN_COMPONENTS.AdminPortals.setAdminSubTab('overview')"
           >
-            📊 District Overview
+            ${icon('analytics', { size: 14, color: this.activeAdminSubTab === 'overview' ? '#0b4f8a' : '#64748b' })}
+            <span>District Overview</span>
           </button>
           <button 
             type="button" 
             class="segmented-control-btn ${this.activeAdminSubTab === 'users' ? 'active' : ''}" 
-            style="flex: 1; font-size: 12px; font-weight: 700;" 
+            style="flex: 1; font-size: 12px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; gap: 6px;" 
             onclick="window.AAVIN_COMPONENTS.AdminPortals.setAdminSubTab('users')"
           >
-            👥 User Management
+            ${icon('user', { size: 14, color: this.activeAdminSubTab === 'users' ? '#0b4f8a' : '#64748b' })}
+            <span>User Management</span>
           </button>
         </div>
 
         ${this.activeAdminSubTab === 'users' ? this.renderUserManagement() : `
           <!-- District Escalation Queue -->
           <div class="card card-floating-3d">
-            <div class="card-header">
+            <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
               <h3 class="card-title">
                 ${icon('issues', { size: 20, color: '#dc2626' })}
-                <span>District Issue Escalations & Department Routing</span>
+                <span>District Issue Escalations & Department Routing (${districtIssues.length})</span>
               </h3>
+              <button type="button" class="btn btn-secondary btn-sm" onclick="window.AAVIN_APP.navigate('issues')">
+                View All →
+              </button>
             </div>
-            <div style="display: flex; flex-direction: column; gap: 10px;">
-              ${districtIssues.map(issue => `
-                <div style="background: #f8fafc; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 12px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
-                  <div>
-                    <strong style="color: var(--aavin-primary); font-family: monospace;">${issue.id}</strong>
-                    <span style="font-weight: 700; color: var(--text-primary); margin-left: 6px;">${issue.title_en}</span>
-                    <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 2px;">Location: ${issue.location} • Status: ${issue.status}</div>
-                  </div>
-                  <div style="display: flex; gap: 6px;">
-                    <button type="button" class="btn btn-primary btn-sm" onclick="window.AAVIN_STORE.forwardIssue('${issue.id}', 'dept_dairy_dev'); window.AAVIN_APP.showToast('Forwarded to State Dairy Dept');">
-                      Forward to State Dept
-                    </button>
-                    <button type="button" class="btn btn-success btn-sm" onclick="window.AAVIN_STORE.resolveIssue('${issue.id}', 'Technician dispatched and repair completed.'); window.AAVIN_APP.showToast('Issue Resolved');">
-                      ✓ Resolve
-                    </button>
-                  </div>
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+              ${districtIssues.length === 0 ? `
+                <div style="text-align: center; padding: 24px; color: var(--text-muted);">
+                  No open issues currently in District queue.
                 </div>
-              `).join('')}
+              ` : districtIssues.map(issue => {
+                const isUrgent = issue.calculatedPriority === 'urgent' || issue.calculatedPriority === 'critical';
+                const isResolved = issue.status === 'resolved' || issue.status === 'closed';
+
+                return `
+                  <div style="background: #f8fafc; border: 1.5px solid var(--border-strong); border-radius: var(--radius-md); padding: 14px; border-left: 5px solid ${isResolved ? '#15803d' : (isUrgent ? '#dc2626' : '#ea580c')};">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 8px;">
+                      <div style="flex: 1; min-width: 260px;">
+                        <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                          <strong style="color: var(--aavin-primary); font-family: monospace; font-size: 12px; background: #e0f2fe; padding: 2px 6px; border-radius: 4px;">${issue.id}</strong>
+                          <span class="badge" style="background: #f1f5f9; color: #475569; font-size: 11px;">
+                            ${issue.categoryName_ta || issue.categoryName_en || issue.category}
+                          </span>
+                          <span class="badge" style="background: ${isUrgent ? '#fee2e2' : '#dcfce7'}; color: ${isUrgent ? '#dc2626' : '#15803d'}; font-weight: 800;">
+                            ${isUrgent ? '⚡ URGENT' : '✓ NORMAL'}
+                          </span>
+                        </div>
+
+                        <h4 style="font-size: 14px; margin-top: 6px; color: var(--text-primary); font-weight: 800;">
+                          ${issue.title_ta || issue.title_en}
+                        </h4>
+
+                        <p style="font-size: 12px; color: #334155; margin-top: 4px; line-height: 1.4; white-space: pre-line;">
+                          ${issue.description}
+                        </p>
+
+                        ${issue.evidence ? `
+                          <div style="margin-top: 6px; display: inline-flex; align-items: center; gap: 6px; font-size: 11px; background: #ecfdf5; border: 1px solid #a7f3d0; padding: 3px 8px; border-radius: 6px; color: #047857; font-weight: 700;">
+                            📎 Evidence: ${issue.evidence.name || 'File attached'}
+                          </div>
+                        ` : ''}
+
+                        <div style="font-size: 11px; color: var(--text-muted); margin-top: 6px;">
+                          👤 Member: <strong>${issue.reporterName}</strong> • 📍 ${issue.location} • 📅 ${issue.createdAt}
+                        </div>
+                      </div>
+
+                      <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 6px;">
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                          <span style="font-size: 11px; font-weight: 700; color: var(--text-muted);">Status:</span>
+                          <select 
+                            onchange="window.AAVIN_STORE.updateIssueStatus('${issue.id}', this.value); window.AAVIN_APP.showToast('Status updated to: ' + this.value);"
+                            style="padding: 4px 8px; border-radius: 6px; border: 1.5px solid var(--border-strong); font-size: 11.5px; font-weight: 700; background: #ffffff; cursor: pointer;"
+                          >
+                            <option value="submitted" ${issue.status === 'submitted' ? 'selected' : ''}>1. Submitted</option>
+                            <option value="under_review" ${issue.status === 'under_review' || issue.status === 'admin_verification' || issue.status === 'verified' ? 'selected' : ''}>2. Under Review</option>
+                            <option value="assigned" ${issue.status === 'assigned' ? 'selected' : ''}>3. Assigned</option>
+                            <option value="in_progress" ${issue.status === 'in_progress' || issue.status === 'forwarded' || issue.status === 'action_in_progress' ? 'selected' : ''}>4. In Progress</option>
+                            <option value="resolved" ${issue.status === 'resolved' ? 'selected' : ''}>5. Resolved</option>
+                            <option value="closed" ${issue.status === 'closed' ? 'selected' : ''}>6. Closed</option>
+                          </select>
+                        </div>
+
+                        <div style="display: flex; gap: 6px; margin-top: 4px;">
+                          <button type="button" class="btn btn-primary btn-sm" onclick="window.AAVIN_STORE.forwardIssue('${issue.id}', 'dept_dairy_dev'); window.AAVIN_APP.showToast('Forwarded to State Dairy Dept');" style="font-size: 11px;">
+                            Forward Dept
+                          </button>
+                          <button type="button" class="btn btn-success btn-sm" onclick="window.AAVIN_STORE.resolveIssue('${issue.id}', 'Technician dispatched and repair completed.'); window.AAVIN_APP.showToast('Issue Resolved');" style="font-size: 11px;">
+                            ${icon('check', { size: 12, color: '#ffffff' })} Resolve
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                `;
+              }).join('')}
             </div>
           </div>
         `}
@@ -449,25 +517,26 @@ window.AAVIN_COMPONENTS.AdminPortals = {
           <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 10px;">
             <div>
               <div style="display: flex; align-items: center; gap: 8px;">
-                <span class="badge" style="background: #e8f2fc; color: #0b4f8a; font-weight: 800;">
-                  🏢 SANGAM ADMIN PORTAL • SUPABASE AUTH
+                <span class="badge" style="background: #e8f2fc; color: #0b4f8a; font-weight: 800; display: inline-flex; align-items: center; gap: 4px;">
+                  ${icon('dairy', { size: 14, color: '#0b4f8a' })} SANGAM ADMIN PORTAL • SUPABASE AUTH
                 </span>
-                <span class="badge badge-normal">✓ Verified Admin</span>
+                <span class="badge badge-normal">${icon('check', { size: 11, color: '#059669' })} Verified Admin</span>
               </div>
               <h2 style="font-size: 1.35rem; color: #07355e; font-weight: 800; margin-top: 6px;">
                 ${admin.sangamName || 'Aavin Madurai Thozhilar Sangam'}
               </h2>
               <p style="font-size: 12.5px; color: var(--text-muted); margin-top: 2px;">
-                👤 Officer: <strong>${admin.fullName}</strong> • 📧 ${admin.email}
+                Officer: <strong>${admin.fullName}</strong> • ${admin.email}
               </p>
             </div>
 
             <div style="display: flex; gap: 8px;">
               <button type="button" class="btn btn-secondary btn-sm" onclick="window.AAVIN_COMPONENTS.AdminPortals.setAdminSubTab('users')">
-                👥 Manage Users
+                ${icon('user', { size: 14, color: '#0b4f8a' })}
+                <span>Manage Users</span>
               </button>
               <button type="button" class="btn btn-danger btn-sm" onclick="window.AAVIN_SUPABASE_AUTH.signOutAdmin()">
-                🚪 Admin Sign Out
+                <span>Admin Sign Out</span>
               </button>
             </div>
           </div>
@@ -478,64 +547,114 @@ window.AAVIN_COMPONENTS.AdminPortals = {
           <button 
             type="button" 
             class="segmented-control-btn ${this.activeAdminSubTab === 'overview' ? 'active' : ''}" 
-            style="flex: 1; font-size: 12px; font-weight: 700;" 
+            style="flex: 1; font-size: 12px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; gap: 6px;" 
             onclick="window.AAVIN_COMPONENTS.AdminPortals.setAdminSubTab('overview')"
           >
-            📊 Sangam Queue
+            ${icon('analytics', { size: 14, color: this.activeAdminSubTab === 'overview' ? '#0b4f8a' : '#64748b' })}
+            <span>Sangam Queue</span>
           </button>
           <button 
             type="button" 
             class="segmented-control-btn ${this.activeAdminSubTab === 'users' ? 'active' : ''}" 
-            style="flex: 1; font-size: 12px; font-weight: 700;" 
+            style="flex: 1; font-size: 12px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; gap: 6px;" 
             onclick="window.AAVIN_COMPONENTS.AdminPortals.setAdminSubTab('users')"
           >
-            👥 User Management
+            ${icon('user', { size: 14, color: this.activeAdminSubTab === 'users' ? '#0b4f8a' : '#64748b' })}
+            <span>User Management</span>
           </button>
         </div>
 
         ${this.activeAdminSubTab === 'users' ? this.renderUserManagement() : `
           <!-- Issues Requiring Sangam Admin Action -->
           <div class="card card-floating-3d" style="margin-bottom: 20px;">
-            <div class="card-header">
+            <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
               <h3 class="card-title">
                 ${icon('issues', { size: 20, color: '#dc2626' })}
-                <span>Local Sangam Grievances Queue</span>
+                <span>Local Sangam Grievances Queue (${issues.length})</span>
               </h3>
-              <span class="badge" style="background: #fef3c7; color: #92400e;">
-                ${issues.length} Registered
-              </span>
+              <button type="button" class="btn btn-primary btn-sm" onclick="window.AAVIN_APP.navigate('issues')">
+                ${icon('plus', { size: 12, color: '#ffffff' })}
+                <span>New Grievance</span>
+              </button>
             </div>
 
-            <div style="display: flex; flex-direction: column; gap: 10px;">
-              ${issues.map(issue => `
-                <div style="background: #f8fafc; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 12px; border-left: 4px solid ${issue.finalPriority === 'critical' ? '#dc2626' : '#ea580c'};">
-                  <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 8px;">
-                    <div>
-                      <div style="display: flex; align-items: center; gap: 8px;">
-                        <strong style="color: #0b4f8a; font-family: monospace; font-size: 12px;">${issue.id}</strong>
-                        <span class="badge ${issue.finalPriority === 'critical' ? 'badge-critical' : 'badge-high'}">
-                          ${(issue.finalPriority || 'high').toUpperCase()}
-                        </span>
-                      </div>
-                      <h4 style="font-size: 13.5px; margin-top: 4px; color: var(--text-primary); font-weight: 800;">${issue.title_en}</h4>
-                      <p style="font-size: 11.5px; color: var(--text-muted); margin-top: 2px;">Reporter: ${issue.reporterName} • ${issue.createdAt}</p>
-                    </div>
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+              ${issues.length === 0 ? `
+                <div style="text-align: center; padding: 24px; color: var(--text-muted);">
+                  No grievances currently registered for this Sangam.
+                </div>
+              ` : issues.map(issue => {
+                const isUrgent = issue.calculatedPriority === 'urgent' || issue.calculatedPriority === 'critical';
+                const isResolved = issue.status === 'resolved' || issue.status === 'closed';
 
-                    <div style="display: flex; gap: 6px;">
-                      ${!issue.isAdminVerified ? `
-                        <button type="button" class="btn btn-success btn-sm" onclick="window.AAVIN_STORE.verifyIssue('${issue.id}', 'critical'); window.AAVIN_APP.showToast('Issue Verified & Prioritized');">
-                          ✓ Verify & Escalate
-                        </button>
-                      ` : `
-                        <span class="badge badge-status-verified">✓ Verified</span>
-                      `}
-                      <button type="button" class="btn btn-secondary btn-sm" onclick="window.AAVIN_APP.navigate('issues')">
-                        View
-                      </button>
+                return `
+                  <div style="background: #f8fafc; border: 1.5px solid var(--border-strong); border-radius: var(--radius-md); padding: 14px; border-left: 5px solid ${isResolved ? '#15803d' : (isUrgent ? '#dc2626' : '#0b4f8a')};">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 8px;">
+                      <div style="flex: 1; min-width: 260px;">
+                        <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                          <strong style="color: #0b4f8a; font-family: monospace; font-size: 12px; background: #e0f2fe; padding: 2px 6px; border-radius: 4px;">${issue.id}</strong>
+                          <span class="badge" style="background: #f1f5f9; color: #475569; font-size: 11px;">
+                            ${issue.categoryName_ta || issue.categoryName_en || issue.category}
+                          </span>
+                          <span class="badge" style="background: ${isUrgent ? '#fee2e2' : '#dcfce7'}; color: ${isUrgent ? '#dc2626' : '#15803d'}; font-weight: 800;">
+                            ${isUrgent ? '⚡ URGENT' : '✓ NORMAL'}
+                          </span>
+                        </div>
+
+                        <h4 style="font-size: 14px; margin-top: 6px; color: var(--text-primary); font-weight: 800;">
+                          ${issue.title_ta || issue.title_en}
+                        </h4>
+
+                        <p style="font-size: 12px; color: #334155; margin-top: 4px; line-height: 1.4; white-space: pre-line;">
+                          ${issue.description}
+                        </p>
+
+                        ${issue.evidence ? `
+                          <div style="margin-top: 6px; display: inline-flex; align-items: center; gap: 6px; font-size: 11px; background: #ecfdf5; border: 1px solid #a7f3d0; padding: 3px 8px; border-radius: 6px; color: #047857; font-weight: 700;">
+                            📎 Evidence: ${issue.evidence.name || 'File attached'}
+                          </div>
+                        ` : ''}
+
+                        <div style="font-size: 11px; color: var(--text-muted); margin-top: 6px;">
+                          👤 Member: <strong>${issue.reporterName}</strong> • 📍 ${issue.location || 'Madurai'} • 📅 ${issue.createdAt}
+                        </div>
+                      </div>
+
+                      <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 6px;">
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                          <span style="font-size: 11px; font-weight: 700; color: var(--text-muted);">Status:</span>
+                          <select 
+                            onchange="window.AAVIN_STORE.updateIssueStatus('${issue.id}', this.value); window.AAVIN_APP.showToast('Grievance status updated to: ' + this.value);"
+                            style="padding: 4px 8px; border-radius: 6px; border: 1.5px solid var(--border-strong); font-size: 11.5px; font-weight: 700; background: #ffffff; cursor: pointer;"
+                          >
+                            <option value="submitted" ${issue.status === 'submitted' ? 'selected' : ''}>1. Submitted</option>
+                            <option value="under_review" ${issue.status === 'under_review' || issue.status === 'admin_verification' || issue.status === 'verified' ? 'selected' : ''}>2. Under Review</option>
+                            <option value="assigned" ${issue.status === 'assigned' ? 'selected' : ''}>3. Assigned</option>
+                            <option value="in_progress" ${issue.status === 'in_progress' || issue.status === 'forwarded' || issue.status === 'action_in_progress' ? 'selected' : ''}>4. In Progress</option>
+                            <option value="resolved" ${issue.status === 'resolved' ? 'selected' : ''}>5. Resolved</option>
+                            <option value="closed" ${issue.status === 'closed' ? 'selected' : ''}>6. Closed</option>
+                          </select>
+                        </div>
+
+                        <div style="display: flex; gap: 4px; margin-top: 4px;">
+                          ${issue.status !== 'resolved' && issue.status !== 'closed' ? `
+                            <button type="button" class="btn btn-success btn-sm" onclick="window.AAVIN_STORE.resolveIssue('${issue.id}', 'Action completed by Sangam Secretary'); window.AAVIN_APP.showToast('Issue marked Resolved');" style="font-size: 11px; padding: 4px 8px;">
+                              ${icon('check', { size: 12, color: '#ffffff' })} Resolve
+                            </button>
+                          ` : `
+                            <button type="button" class="btn btn-secondary btn-sm" onclick="window.AAVIN_STORE.closeIssue('${issue.id}', 'Confirmed closed'); window.AAVIN_APP.showToast('Issue Closed');" style="font-size: 11px; padding: 4px 8px;">
+                              Close
+                            </button>
+                          `}
+                          <button type="button" class="btn btn-secondary btn-sm" onclick="window.AAVIN_APP.navigate('issues', { action: 'track' })" style="font-size: 11px; padding: 4px 8px;">
+                            Track
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                </div>
-              `).join('')}
+                `;
+              }).join('')}
             </div>
           </div>
         `}
