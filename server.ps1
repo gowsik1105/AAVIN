@@ -61,6 +61,134 @@ function Record-RegistrationAttempt([string]$ip, [string]$email) {
     }
 }
 
+function Get-AavinHmacSecret {
+    $sec = if ($env:OTP_SECRET) { $env:OTP_SECRET } elseif ($env:SUPABASE_SERVICE_ROLE_KEY) { $env:SUPABASE_SERVICE_ROLE_KEY } else { "aavin-cooperative-dairy-tn-auth-secret-key-2026" }
+    return [System.Text.Encoding]::UTF8.GetBytes($sec)
+}
+
+function Base64UrlEncode([byte[]]$bytes) {
+    return [Convert]::ToBase64String($bytes).TrimEnd('=').Replace('+', '-').Replace('/', '_')
+}
+
+function Base64UrlDecode([string]$str) {
+    $incoming = $str.Replace('-', '+').Replace('_', '/')
+    switch ($incoming.Length % 4) {
+        2 { $incoming += "=="; break }
+        3 { $incoming += "="; break }
+    }
+    return [System.Convert]::FromBase64String($incoming)
+}
+
+function New-AavinOtpSessionToken([string]$email, [string]$phone, [string]$otpCode) {
+    $nowMs = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
+    $expMs = $nowMs + (10 * 60 * 1000)
+    $nonce = [System.Guid]::NewGuid().ToString("N").Substring(0, 16)
+    $payloadObj = @{ email = $email; phone = $phone; exp = $expMs; nonce = $nonce }
+    $payloadJson = $payloadObj | ConvertTo-Json -Compress
+    $payloadB64 = Base64UrlEncode([System.Text.Encoding]::UTF8.GetBytes($payloadJson))
+    $signData = "$payloadB64.$otpCode"
+
+    $sha = [System.Security.Cryptography.SHA256]::Create()
+    $keyBytes = $sha.ComputeHash((Get-AavinHmacSecret))
+    $hmac = New-Object System.Security.Cryptography.HMACSHA256
+    $hmac.Key = $keyBytes
+    $sigBytes = $hmac.ComputeHash([System.Text.Encoding]::UTF8.GetBytes($signData))
+    $sigB64 = Base64UrlEncode($sigBytes)
+    return "$payloadB64.$sigB64"
+}
+
+function Test-AavinOtpSessionToken([string]$email, [string]$phone, [string]$otpCode, [string]$sessionToken) {
+    if ([string]::IsNullOrWhiteSpace($sessionToken) -or -not $sessionToken.Contains(".")) {
+        return @{ Valid = $false; Error = "NO_OTP_SENT"; Message = "No active OTP session found. Please click Resend Code." }
+    }
+    $parts = $sessionToken.Split(".")
+    if ($parts.Length -ne 2) {
+        return @{ Valid = $false; Error = "INVALID_TOKEN"; Message = "Invalid verification token format." }
+    }
+    $payloadB64 = $parts[0]
+    $sig = $parts[1]
+    $payloadJson = [System.Text.Encoding]::UTF8.GetString((Base64UrlDecode $payloadB64))
+    $payload = $payloadJson | ConvertFrom-Json
+    $nowMs = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
+    if ($payload.exp -and $nowMs -gt $payload.exp) {
+        return @{ Valid = $false; Error = "EXPIRED_OTP"; Message = "Verification code has expired. Please request a new code." }
+    }
+    $reqTarget = if ($email) { $email.Trim().ToLower() } else { $phone.Trim() }
+    $tokenTarget = if ($payload.email) { $payload.email.Trim().ToLower() } else { $payload.phone.Trim() }
+    if ($reqTarget -and $tokenTarget -and $reqTarget -ne $tokenTarget) {
+        return @{ Valid = $false; Error = "TARGET_MISMATCH"; Message = "Verification code was requested for a different account." }
+    }
+    $signData = "$payloadB64.$otpCode"
+    $sha = [System.Security.Cryptography.SHA256]::Create()
+    $keyBytes = $sha.ComputeHash((Get-AavinHmacSecret))
+    $hmac = New-Object System.Security.Cryptography.HMACSHA256
+    $hmac.Key = $keyBytes
+    $expectedSig = Base64UrlEncode($hmac.ComputeHash([System.Text.Encoding]::UTF8.GetBytes($signData)))
+    if ($sig -ne $expectedSig) {
+        return @{ Valid = $false; Error = "WRONG_OTP"; Message = "Incorrect verification code. Please check your email and try again." }
+    }
+    return @{ Valid = $true; Email = $payload.email; Phone = $payload.phone }
+}
+
+function New-AavinVerificationToken([string]$email, [string]$phone) {
+    $nowMs = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
+    $expMs = $nowMs + (30 * 60 * 1000)
+    $nonce = [System.Guid]::NewGuid().ToString("N")
+    $payloadObj = @{ email = $email; phone = $phone; verified = $true; exp = $expMs; nonce = $nonce }
+    $payloadJson = $payloadObj | ConvertTo-Json -Compress
+    $payloadB64 = Base64UrlEncode([System.Text.Encoding]::UTF8.GetBytes($payloadJson))
+
+    $sha = [System.Security.Cryptography.SHA256]::Create()
+    $keyBytes = $sha.ComputeHash((Get-AavinHmacSecret))
+    $hmac = New-Object System.Security.Cryptography.HMACSHA256
+    $hmac.Key = $keyBytes
+    $sigBytes = $hmac.ComputeHash([System.Text.Encoding]::UTF8.GetBytes($payloadB64))
+    $sigB64 = Base64UrlEncode($sigBytes)
+    return "$payloadB64.$sigB64"
+}
+
+function Test-AavinVerificationToken([string]$token, [string]$expectedEmail) {
+    if ([string]::IsNullOrWhiteSpace($token)) {
+        return @{ Valid = $false; Error = "TOKEN_MISSING"; Message = "Email verification token is missing." }
+    }
+    if ($token.Contains(".")) {
+        $parts = $token.Split(".")
+        if ($parts.Length -ne 2) {
+            return @{ Valid = $false; Error = "INVALID_TOKEN"; Message = "Invalid verification token format." }
+        }
+        $payloadB64 = $parts[0]
+        $sig = $parts[1]
+        $payloadJson = [System.Text.Encoding]::UTF8.GetString((Base64UrlDecode $payloadB64))
+        $payload = $payloadJson | ConvertFrom-Json
+        $nowMs = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
+        if (-not $payload.verified) {
+            return @{ Valid = $false; Error = "NOT_VERIFIED"; Message = "Email verification was not completed." }
+        }
+        if ($payload.exp -and $nowMs -gt $payload.exp) {
+            return @{ Valid = $false; Error = "EXPIRED_TOKEN"; Message = "Email verification token has expired." }
+        }
+        if ($payload.email -and $expectedEmail -and ($payload.email.Trim().ToLower() -ne $expectedEmail.Trim().ToLower())) {
+            return @{ Valid = $false; Error = "EMAIL_MISMATCH"; Message = "Verification token was issued for a different email address." }
+        }
+        $sha = [System.Security.Cryptography.SHA256]::Create()
+        $keyBytes = $sha.ComputeHash((Get-AavinHmacSecret))
+        $hmac = New-Object System.Security.Cryptography.HMACSHA256
+        $hmac.Key = $keyBytes
+        $expectedSig = Base64UrlEncode($hmac.ComputeHash([System.Text.Encoding]::UTF8.GetBytes($payloadB64)))
+        if ($sig -ne $expectedSig) {
+            return @{ Valid = $false; Error = "INVALID_SIGNATURE"; Message = "Verification token signature is invalid." }
+        }
+        return @{ Valid = $true; Payload = $payload }
+    }
+    if ($Global:VERIFIED_TOKENS.ContainsKey($token)) {
+        $rec = $Global:VERIFIED_TOKENS[$token]
+        if ($rec.email -eq $expectedEmail -and [DateTime]::UtcNow -le $rec.expiresAt) {
+            return @{ Valid = $true; Payload = $rec }
+        }
+    }
+    return @{ Valid = $false; Error = "TOKEN_INVALID"; Message = "Email verification token is invalid or expired." }
+}
+
 function Get-HaversineKm([double]$lat1, [double]$lon1, [double]$lat2, [double]$lon2) {
     try {
         $r = 6371.0
@@ -361,9 +489,11 @@ try {
                             verified = $false
                         }
 
+                        $sessionToken = New-AavinOtpSessionToken $email $phone $otpCode
                         Send-JsonResponse $response 200 @{
                             success = $true
                             email = $email
+                            sessionToken = $sessionToken
                             message = "Verification email sent. Please check your inbox and spam folder."
                             cooldownSeconds = $COOLDOWN_SECONDS
                             requestId = $requestId
@@ -395,12 +525,14 @@ try {
                         verified = $false
                     }
 
+                    $sessionToken = New-AavinOtpSessionToken $email $phone $otpCode
                     $ts = (Get-Date).ToString("yyyy-MM-ddTHH:mm:ssZ")
                     Write-Host "[AAVIN AUTH] [$ts] [$requestId] Provider: SMS | Mobile: +91 $phone | Status: ACCEPTED" -ForegroundColor Green
 
                     Send-JsonResponse $response 200 @{
                         success = $true
                         phone = $phone
+                        sessionToken = $sessionToken
                         message = "Verification OTP sent successfully to +91 $phone"
                         cooldownSeconds = $COOLDOWN_SECONDS
                         requestId = $requestId
@@ -417,6 +549,7 @@ try {
                 $email = if ($body.email) { $body.email.Trim().ToLower() } else { '' }
                 $phone = if ($body.phone) { ($body.phone -replace '\D', '').Trim() } else { '' }
                 $code = if ($body.otp) { ($body.otp -replace '\D', '').Trim() } else { '' }
+                $sessionToken = if ($body.sessionToken) { $body.sessionToken.Trim() } elseif ($body.otpSessionToken) { $body.otpSessionToken.Trim() } else { '' }
                 $targetKey = if (-not [string]::IsNullOrWhiteSpace($email)) { $email } else { $phone }
 
                 if ([string]::IsNullOrWhiteSpace($targetKey)) {
@@ -429,6 +562,33 @@ try {
                     continue
                 }
 
+                # 1. Primary: Stateless HMAC token validation
+                if (-not [string]::IsNullOrWhiteSpace($sessionToken)) {
+                    $testRes = Test-AavinOtpSessionToken $email $phone $code $sessionToken
+                    if (-not $testRes.Valid) {
+                        Send-JsonResponse $response 400 @{
+                            success = $false
+                            error = $testRes.Error
+                            message = $testRes.Message
+                        }
+                        continue
+                    }
+
+                    $verificationToken = New-AavinVerificationToken $testRes.Email $testRes.Phone
+                    Write-Host "[AAVIN OTP GATEWAY] Account $targetKey verified via HMAC." -ForegroundColor Cyan
+
+                    Send-JsonResponse $response 200 @{
+                        success = $true
+                        email = $testRes.Email
+                        phone = $testRes.Phone
+                        verified = $true
+                        verificationToken = $verificationToken
+                        message = "Email verified successfully! Proceed to personal details."
+                    }
+                    continue
+                }
+
+                # 2. Secondary fallback: in-memory store
                 if (-not $Global:OTP_STORE.ContainsKey($targetKey)) {
                     Send-JsonResponse $response 400 @{ success = $false; error = "NO_OTP_SENT"; message = "No active OTP request found for this account. Please click Resend Code." }
                     continue
@@ -464,13 +624,13 @@ try {
                     continue
                 }
 
-                $verificationToken = [System.Guid]::NewGuid().ToString("N")
+                $verificationToken = New-AavinVerificationToken $email $phone
                 $Global:OTP_STORE.Remove($targetKey)
                 $Global:VERIFIED_TOKENS[$verificationToken] = @{
                     email = $email
                     phone = $phone
                     createdAt = [DateTime]::UtcNow
-                    expiresAt = [DateTime]::UtcNow.AddMinutes(15)
+                    expiresAt = [DateTime]::UtcNow.AddMinutes(30)
                 }
 
                 Write-Host "[AAVIN OTP GATEWAY] Account $targetKey successfully verified." -ForegroundColor Cyan
@@ -527,24 +687,13 @@ try {
                     continue
                 }
 
-                # 2. Token Security Validation (Do NOT delete token before success)
-                if ([string]::IsNullOrWhiteSpace($token) -or -not $Global:VERIFIED_TOKENS.ContainsKey($token)) {
+                # 2. Token Security Validation Cryptographically
+                $tokenValidation = Test-AavinVerificationToken $token $email
+                if (-not $tokenValidation.Valid) {
                     Send-JsonResponse $response 403 @{
                         success = $false
                         error = "INVALID_OR_EXPIRED_TOKEN"
-                        message = "Email verification token is missing or expired. Please complete Email OTP verification first."
-                        requestId = $requestId
-                    }
-                    continue
-                }
-
-                $tokRecord = $Global:VERIFIED_TOKENS[$token]
-                if ($tokRecord.email -ne $email -or [DateTime]::UtcNow -gt $tokRecord.expiresAt) {
-                    $Global:VERIFIED_TOKENS.Remove($token)
-                    Send-JsonResponse $response 403 @{
-                        success = $false
-                        error = "TOKEN_MISMATCH_OR_EXPIRED"
-                        message = "Email verification token is invalid or has expired. Please verify your email again."
+                        message = $tokenValidation.Message
                         requestId = $requestId
                     }
                     continue

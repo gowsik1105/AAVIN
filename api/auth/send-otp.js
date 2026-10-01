@@ -580,7 +580,30 @@ module.exports = async function handler(req, res) {
         });
       }
 
-      // Successfully dispatched: Store OTP in cache
+function getHmacSecret() {
+  const secret = process.env.OTP_SECRET || process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.JWT_SECRET || process.env.SUPABASE_URL || 'aavin-cooperative-dairy-tn-auth-secret-key-2026';
+  return crypto.createHash('sha256').update(secret).digest();
+}
+
+function generateOtpSessionToken(target, otpCode) {
+  const exp = Date.now() + 10 * 60 * 1000; // 10 minutes
+  const nonce = crypto.randomBytes(8).toString('hex');
+  const payloadObj = {
+    email: target.email || null,
+    phone: target.phone || null,
+    exp: exp,
+    nonce: nonce
+  };
+  const payloadB64 = Buffer.from(JSON.stringify(payloadObj)).toString('base64url');
+  const signData = `${payloadB64}.${otpCode}`;
+  const sig = crypto.createHmac('sha256', getHmacSecret()).update(signData).digest('base64url');
+  return `${payloadB64}.${sig}`;
+}
+
+      // Generate stateless cryptographic HMAC session token (never exposes OTP or secret)
+      const sessionToken = generateOtpSessionToken({ email, phone }, otpCode);
+
+      // Successfully dispatched: Store in fallback in-memory cache
       memoryOtpStore.set(targetKey, {
         hashedOtp,
         createdAt: Date.now(),
@@ -592,12 +615,15 @@ module.exports = async function handler(req, res) {
       return res.status(200).json({
         success: true,
         email: email,
+        sessionToken: sessionToken,
         message: 'Verification email sent. Please check your inbox and spam folder.',
         cooldownSeconds: COOLDOWN_SECONDS,
         requestId
       });
     } else {
       // Mobile SMS OTP
+      const sessionToken = generateOtpSessionToken({ email, phone }, otpCode);
+
       memoryOtpStore.set(targetKey, {
         hashedOtp,
         createdAt: Date.now(),
@@ -618,6 +644,7 @@ module.exports = async function handler(req, res) {
       return res.status(200).json({
         success: true,
         phone: phone,
+        sessionToken: sessionToken,
         message: `Verification OTP sent successfully to +91 ${phone}`,
         cooldownSeconds: COOLDOWN_SECONDS,
         requestId

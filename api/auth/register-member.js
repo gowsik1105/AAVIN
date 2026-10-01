@@ -225,25 +225,75 @@ module.exports = async function handler(req, res) {
       return res.status(400).json({ success: false, error: 'INVALID_PHONE', message: 'Please provide a valid 10-digit mobile number.', requestId });
     }
 
-    // 2. Validate Step 1 Email OTP Verification Token (Do NOT delete token on validation failure)
-    const verifiedTokens = global._aavinVerifiedTokens || (global._aavinVerifiedTokens = new Map());
-    const tokenRecord = verifiedTokens.get(otpVerificationToken);
+function getHmacSecret() {
+  const secret = process.env.OTP_SECRET || process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.JWT_SECRET || process.env.SUPABASE_URL || 'aavin-cooperative-dairy-tn-auth-secret-key-2026';
+  return crypto.createHash('sha256').update(secret).digest();
+}
 
-    if (!otpVerificationToken || !tokenRecord) {
-      return res.status(403).json({
-        success: false,
-        error: 'EMAIL_NOT_VERIFIED',
-        message: 'Email verification token is missing or expired. Please complete Email OTP verification first.',
-        requestId
-      });
+function validateVerificationToken(token, expectedEmail) {
+  if (!token || typeof token !== 'string') {
+    return { valid: false, error: 'TOKEN_MISSING', message: 'Email verification token is missing. Please complete Email OTP verification first.' };
+  }
+
+  // 1. Primary: Stateless HMAC-signed token validation
+  if (token.includes('.')) {
+    const parts = token.split('.');
+    if (parts.length !== 2) {
+      return { valid: false, error: 'INVALID_TOKEN', message: 'Malformed verification token format.' };
     }
 
-    if (tokenRecord.email !== email || Date.now() > tokenRecord.expiresAt) {
-      verifiedTokens.delete(otpVerificationToken);
+    const [payloadB64, sig] = parts;
+    let payload = null;
+    try {
+      payload = JSON.parse(Buffer.from(payloadB64, 'base64url').toString('utf8'));
+    } catch (e) {
+      return { valid: false, error: 'INVALID_TOKEN', message: 'Malformed verification token payload.' };
+    }
+
+    if (!payload.verified) {
+      return { valid: false, error: 'NOT_VERIFIED', message: 'Email verification was not completed successfully.' };
+    }
+
+    if (!payload.exp || Date.now() > payload.exp) {
+      return { valid: false, error: 'EXPIRED_TOKEN', message: 'Email verification token has expired. Please verify your email again.' };
+    }
+
+    if ((payload.email || '').trim().toLowerCase() !== expectedEmail.trim().toLowerCase()) {
+      return { valid: false, error: 'EMAIL_MISMATCH', message: 'Verification token was issued for a different email address.' };
+    }
+
+    const expectedSig = crypto.createHmac('sha256', getHmacSecret()).update(payloadB64).digest('base64url');
+    const sigBuf = Buffer.from(sig);
+    const expBuf = Buffer.from(expectedSig);
+
+    if (sigBuf.length !== expBuf.length || !crypto.timingSafeEqual(sigBuf, expBuf)) {
+      return { valid: false, error: 'INVALID_SIGNATURE', message: 'Verification token signature is invalid. Please verify your email again.' };
+    }
+
+    return { valid: true, payload };
+  }
+
+  // 2. Fallback to in-memory store (Localhost / single-container dev fallback)
+  const verifiedTokens = global._aavinVerifiedTokens || (global._aavinVerifiedTokens = new Map());
+  const tokenRecord = verifiedTokens.get(token);
+  if (!tokenRecord) {
+    return { valid: false, error: 'TOKEN_NOT_FOUND', message: 'Email verification token is missing or expired. Please complete Email OTP verification first.' };
+  }
+  if (tokenRecord.email !== expectedEmail || Date.now() > tokenRecord.expiresAt) {
+    verifiedTokens.delete(token);
+    return { valid: false, error: 'EXPIRED_TOKEN', message: 'Email verification token is invalid or has expired. Please verify your email again.' };
+  }
+
+  return { valid: true, payload: tokenRecord };
+}
+
+    // 2. Validate Step 1 Email OTP Verification Token Cryptographically
+    const tokenValidation = validateVerificationToken(otpVerificationToken, email);
+    if (!tokenValidation.valid) {
       return res.status(403).json({
         success: false,
         error: 'EMAIL_NOT_VERIFIED',
-        message: 'Email verification token is invalid or has expired. Please verify your email again.',
+        message: tokenValidation.message,
         requestId
       });
     }

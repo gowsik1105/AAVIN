@@ -711,6 +711,7 @@ window.AAVIN_COMPONENTS.Auth = {
 
       if (res.ok && data && data.success) {
         this.isOtpSent = true;
+        this.otpSessionToken = data.sessionToken || '';
         this.otpTimer = data.cooldownSeconds || 60;
         this.successMessage = data.message || 'Verification email sent. Please check your inbox and spam folder.';
         this.errorMessage = '';
@@ -778,7 +779,11 @@ window.AAVIN_COMPONENTS.Auth = {
       const res = await fetch('/api/auth/verify-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email, otp: otp })
+        body: JSON.stringify({
+          email: email,
+          otp: otp,
+          sessionToken: this.otpSessionToken || ''
+        })
       });
       const data = await res.json();
       this.isLoading = false;
