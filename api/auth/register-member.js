@@ -178,53 +178,6 @@ function getJson(urlStr, headers) {
   });
 }
 
-module.exports = async function handler(req, res) {
-  const requestId = crypto.randomUUID();
-  const clientIp = (req.headers['x-forwarded-for'] || req.socket?.remoteAddress || '127.0.0.1').split(',')[0].trim();
-
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Request-ID');
-  res.setHeader('X-Request-ID', requestId);
-
-  if (req.method === 'OPTIONS') {
-    return res.status(204).end();
-  }
-
-  if (req.method !== 'POST') {
-    return res.status(405).json({ success: false, error: 'METHOD_NOT_ALLOWED', message: 'Only POST is supported.', requestId });
-  }
-
-  try {
-    const body = typeof req.body === 'string' ? JSON.parse(req.body) : (req.body || {});
-    const email = (body.email || '').trim().toLowerCase();
-    const rawPassword = body.password ? String(body.password) : '';
-    const otpVerificationToken = (body.otpVerificationToken || body.verificationToken || '').trim();
-    const fullName = (body.full_name || body.fullName_en || body.fullName || '').trim();
-    const fullNameTa = (body.full_name_ta || body.fullName_ta || fullName).trim();
-    const phone = (body.phone || '').replace(/\D/g, '').trim();
-    const districtCode = (body.district_code || body.districtCode || 'MDU').trim().toUpperCase();
-    const districtName = (body.district_name || body.districtName_en || 'Madurai District').trim();
-    const sangamId = (body.sangam_id || body.sangamId || 'sgm-mdu').trim();
-    const sangamName = (body.sangam_name || body.sangamName_en || 'Aavin Madurai Thozhilar Sangam').trim();
-    const occupation = (body.occupation || 'Farmer').trim();
-    const sangamRole = (body.sangam_role || body.sangamRole || 'Member').trim();
-    const avatarUrl = (body.profile_photo || body.avatarUrl || 'assets/logo.jpg').trim();
-
-    // 1. Validation (Frontend & Business rules - does NOT consume rate limit quota)
-    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      return res.status(400).json({ success: false, error: 'INVALID_EMAIL', message: 'Please provide a valid email address.', requestId });
-    }
-    if (!rawPassword || rawPassword.length < 6) {
-      return res.status(400).json({ success: false, error: 'INVALID_PASSWORD', message: 'Password must be at least 6 characters long.', requestId });
-    }
-    if (!fullName) {
-      return res.status(400).json({ success: false, error: 'MISSING_NAME', message: 'Full name in English is required.', requestId });
-    }
-    if (!phone || phone.length !== 10) {
-      return res.status(400).json({ success: false, error: 'INVALID_PHONE', message: 'Please provide a valid 10-digit mobile number.', requestId });
-    }
-
 function getHmacSecret() {
   const secret = process.env.OTP_SECRET || process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.JWT_SECRET || process.env.SUPABASE_URL || 'aavin-cooperative-dairy-tn-auth-secret-key-2026';
   return crypto.createHash('sha256').update(secret).digest();
@@ -286,6 +239,53 @@ function validateVerificationToken(token, expectedEmail) {
 
   return { valid: true, payload: tokenRecord };
 }
+
+module.exports = async function handler(req, res) {
+  const requestId = crypto.randomUUID();
+  const clientIp = (req.headers['x-forwarded-for'] || req.socket?.remoteAddress || '127.0.0.1').split(',')[0].trim();
+
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Request-ID');
+  res.setHeader('X-Request-ID', requestId);
+
+  if (req.method === 'OPTIONS') {
+    return res.status(204).end();
+  }
+
+  if (req.method !== 'POST') {
+    return res.status(405).json({ success: false, error: 'METHOD_NOT_ALLOWED', message: 'Only POST is supported.', requestId });
+  }
+
+  try {
+    const body = typeof req.body === 'string' ? JSON.parse(req.body) : (req.body || {});
+    const email = (body.email || '').trim().toLowerCase();
+    const rawPassword = body.password ? String(body.password) : '';
+    const otpVerificationToken = (body.otpVerificationToken || body.verificationToken || '').trim();
+    const fullName = (body.full_name || body.fullName_en || body.fullName || '').trim();
+    const fullNameTa = (body.full_name_ta || body.fullName_ta || fullName).trim();
+    const phone = (body.phone || '').replace(/\D/g, '').trim();
+    const districtCode = (body.district_code || body.districtCode || 'MDU').trim().toUpperCase();
+    const districtName = (body.district_name || body.districtName_en || 'Madurai District').trim();
+    const sangamId = (body.sangam_id || body.sangamId || 'sgm-mdu').trim();
+    const sangamName = (body.sangam_name || body.sangamName_en || 'Aavin Madurai Thozhilar Sangam').trim();
+    const occupation = (body.occupation || 'Farmer').trim();
+    const sangamRole = (body.sangam_role || body.sangamRole || 'Member').trim();
+    const avatarUrl = (body.profile_photo || body.avatarUrl || 'assets/logo.jpg').trim();
+
+    // 1. Validation (Frontend & Business rules - does NOT consume rate limit quota)
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return res.status(400).json({ success: false, error: 'INVALID_EMAIL', message: 'Please provide a valid email address.', requestId });
+    }
+    if (!rawPassword || rawPassword.length < 6) {
+      return res.status(400).json({ success: false, error: 'INVALID_PASSWORD', message: 'Password must be at least 6 characters long.', requestId });
+    }
+    if (!fullName) {
+      return res.status(400).json({ success: false, error: 'MISSING_NAME', message: 'Full name in English is required.', requestId });
+    }
+    if (!phone || phone.length !== 10) {
+      return res.status(400).json({ success: false, error: 'INVALID_PHONE', message: 'Please provide a valid 10-digit mobile number.', requestId });
+    }
 
     // 2. Validate Step 1 Email OTP Verification Token Cryptographically
     const tokenValidation = validateVerificationToken(otpVerificationToken, email);
