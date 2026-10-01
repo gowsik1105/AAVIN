@@ -318,7 +318,7 @@ async function dispatchVerificationEmail({ brevoHost, brevoPort, brevoUser, brev
   const emailSubject = `Aavin Sangam - Email Verification Code (${otpCode})`;
   const emailHtml = `<div style='font-family: Arial, sans-serif; padding: 24px; background-color: #f8fafc;'><div style='max-width: 500px; margin: 0 auto; background: white; padding: 28px; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 4px 12px rgba(0,0,0,0.05);'><div style='text-align: center; margin-bottom: 20px;'><h2 style='color: #07355e; margin: 0;'>ஆவின் சங்கம் • Aavin Sangam</h2><p style='color: #64748b; font-size: 13px; margin-top: 4px;'>Digital Cooperative Federation • Tamil Nadu</p></div><p style='font-size: 14px; color: #334155;'>Hello,</p><p style='font-size: 14px; color: #334155; line-height: 1.5;'>Your 6-digit verification code for Aavin Member Registration is:</p><div style='font-size: 32px; font-weight: 800; color: #0b4f8a; letter-spacing: 6px; padding: 16px; background: #e0f2fe; text-align: center; border-radius: 8px; margin: 20px 0;'>${otpCode}</div><p style='color: #64748b; font-size: 12.5px; line-height: 1.4;'>This code expires in 10 minutes. For your security, do not share this code with anyone.</p><hr style='border: none; border-top: 1px solid #f1f5f9; margin: 20px 0;' /><p style='color: #94a3b8; font-size: 11px; text-align: center; margin: 0;'>Government of Tamil Nadu • Dairy Development Department</p></div></div>`;
 
-  const usableApiKey = brevoApiKey || (brevoPassword && (brevoPassword.startsWith('xsmtpsib-') || brevoPassword.startsWith('xkeysib-')) ? brevoPassword : null);
+  const usableApiKey = (brevoApiKey && brevoApiKey.trim()) || (brevoPassword && brevoPassword.startsWith('xkeysib-') ? brevoPassword.trim() : null);
 
   // Attempt 1: Try Brevo REST API if API Key available (ultra-fast & non-blocking)
   if (usableApiKey) {
@@ -533,7 +533,7 @@ module.exports = async function handler(req, res) {
       const brevoPort = parseInt(process.env.BREVO_SMTP_PORT || '587', 10);
       const brevoUser = (process.env.BREVO_SMTP_USER || '').trim();
       const brevoPassword = (process.env.BREVO_SMTP_PASSWORD || '').trim();
-      const brevoFromEmail = (process.env.BREVO_FROM_EMAIL || 'noreply@aavin.com').trim();
+      const brevoFromEmail = (process.env.BREVO_FROM_EMAIL || process.env.BREVO_SMTP_USER || 'gowsik1105@gmail.com').trim();
       const brevoFromName = (process.env.BREVO_FROM_NAME || 'AAVIN Main Dairy Management').trim();
       const brevoApiKey = (process.env.BREVO_API_KEY || '').trim();
 
@@ -574,6 +574,7 @@ module.exports = async function handler(req, res) {
         return res.status(502).json({
           success: false,
           error: 'EMAIL_DELIVERY_FAILED',
+          providerError: dispatchResult.error || 'DELIVERY_FAILED',
           message: "We couldn't send the verification email right now. Please try again.",
           requestId
         });
