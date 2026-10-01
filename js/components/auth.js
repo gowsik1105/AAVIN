@@ -21,7 +21,117 @@ window.AAVIN_COMPONENTS.Auth = {
   otpInterval: null,
   isPhoneVerified: false,
   isOtpSent: false,
+  otpSessionToken: '',
   verificationToken: '',
+
+  // Dedicated Session Persistence Helpers for Vercel Serverless Stateless Verification
+  saveOtpSession(email, sessionToken) {
+    this.otpSessionToken = sessionToken || '';
+    try {
+      if (email && sessionToken) {
+        sessionStorage.setItem('aavin_registration_otp_session', JSON.stringify({
+          email: email.trim().toLowerCase(),
+          sessionToken: sessionToken,
+          timestamp: Date.now()
+        }));
+      }
+    } catch (e) {}
+  },
+
+  getOtpSession(email) {
+    if (this.otpSessionToken) {
+      return this.otpSessionToken;
+    }
+    try {
+      const stored = sessionStorage.getItem('aavin_registration_otp_session');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed && parsed.sessionToken) {
+          const targetEmail = (email || this.registrationDraft.email || '').trim().toLowerCase();
+          if (!targetEmail || parsed.email === targetEmail) {
+            this.otpSessionToken = parsed.sessionToken;
+            if (parsed.email && !this.registrationDraft.email) {
+              this.registrationDraft.email = parsed.email;
+            }
+            return parsed.sessionToken;
+          }
+        }
+      }
+    } catch (e) {}
+    return null;
+  },
+
+  saveVerificationToken(email, verificationToken) {
+    this.verificationToken = verificationToken || '';
+    try {
+      if (email && verificationToken) {
+        sessionStorage.setItem('aavin_registration_verification_token', JSON.stringify({
+          email: email.trim().toLowerCase(),
+          verificationToken: verificationToken,
+          timestamp: Date.now()
+        }));
+      }
+    } catch (e) {}
+  },
+
+  getVerificationToken(email) {
+    if (this.verificationToken) {
+      return this.verificationToken;
+    }
+    try {
+      const stored = sessionStorage.getItem('aavin_registration_verification_token');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed && parsed.verificationToken) {
+          const targetEmail = (email || this.registrationDraft.email || '').trim().toLowerCase();
+          if (!targetEmail || parsed.email === targetEmail) {
+            this.verificationToken = parsed.verificationToken;
+            return parsed.verificationToken;
+          }
+        }
+      }
+    } catch (e) {}
+    return null;
+  },
+
+  clearOtpSession() {
+    this.otpSessionToken = '';
+    this.verificationToken = '';
+    this.isOtpSent = false;
+    this.isEmailVerified = false;
+    try {
+      sessionStorage.removeItem('aavin_registration_otp_session');
+      sessionStorage.removeItem('aavin_registration_verification_token');
+    } catch (e) {}
+  },
+
+  restoreOtpSession() {
+    try {
+      const vStored = sessionStorage.getItem('aavin_registration_verification_token');
+      if (vStored) {
+        const parsed = JSON.parse(vStored);
+        if (parsed && parsed.verificationToken && parsed.email) {
+          this.registrationDraft.email = parsed.email;
+          this.verificationToken = parsed.verificationToken;
+          this.isEmailVerified = true;
+          this.isOtpSent = true;
+          return true;
+        }
+      }
+
+      const sStored = sessionStorage.getItem('aavin_registration_otp_session');
+      if (sStored) {
+        const parsed = JSON.parse(sStored);
+        if (parsed && parsed.sessionToken && parsed.email) {
+          this.registrationDraft.email = parsed.email;
+          this.otpSessionToken = parsed.sessionToken;
+          this.isOtpSent = true;
+          return true;
+        }
+      }
+    } catch (e) {}
+    return false;
+  },
 
   isLoading: false,
   errorMessage: '',
@@ -60,16 +170,31 @@ window.AAVIN_COMPONENTS.Auth = {
     // Listen for hash changes like #register
     window.addEventListener('hashchange', () => {
       if (window.location.hash === '#register' || window.location.hash.includes('register')) {
-        this.startRegistration();
+        this.resumeOrStartRegistration();
       }
     });
 
     if (window.location.hash === '#register' || window.location.hash.includes('register') || window.location.search.includes('register')) {
-      this.startRegistration();
+      this.resumeOrStartRegistration();
       return;
     }
 
     this.checkInitialSession();
+  },
+
+  resumeOrStartRegistration() {
+    this.currentFlow = 'register';
+    const restored = this.restoreOtpSession();
+    if (restored) {
+      if (this.isEmailVerified) {
+        this.registerStep = 2;
+      } else {
+        this.registerStep = 1;
+      }
+    } else {
+      this.startRegistration();
+    }
+    this.render();
   },
 
   async checkInitialSession() {
@@ -621,6 +746,7 @@ window.AAVIN_COMPONENTS.Auth = {
     this.infoMessage = '';
     this.unconfirmedEmail = null;
     if (this.otpInterval) clearInterval(this.otpInterval);
+    this.clearOtpSession();
 
     // Clean reset of draft state
     this.registrationDraft = {
@@ -661,6 +787,7 @@ window.AAVIN_COMPONENTS.Auth = {
 
   cancelRegistration() {
     if (this.otpInterval) clearInterval(this.otpInterval);
+    this.clearOtpSession();
     if (window.AAVIN_SUPABASE_AUTH && window.AAVIN_SUPABASE_AUTH.currentUser) {
       this.currentFlow = 'home';
       window.AAVIN_APP.navigate('home');
@@ -692,6 +819,10 @@ window.AAVIN_COMPONENTS.Auth = {
       return;
     }
 
+    if (this.registrationDraft.email && this.registrationDraft.email !== email) {
+      this.clearOtpSession();
+    }
+
     this.registrationDraft.email = email;
     this.isLoading = true;
     this.isSendingOtp = true;
@@ -711,7 +842,7 @@ window.AAVIN_COMPONENTS.Auth = {
 
       if (res.ok && data && data.success) {
         this.isOtpSent = true;
-        this.otpSessionToken = data.sessionToken || '';
+        this.saveOtpSession(email, data.sessionToken || '');
         this.otpTimer = data.cooldownSeconds || 60;
         this.successMessage = data.message || 'Verification email sent. Please check your inbox and spam folder.';
         this.errorMessage = '';
@@ -771,6 +902,13 @@ window.AAVIN_COMPONENTS.Auth = {
       return;
     }
 
+    const sessionToken = this.getOtpSession(email);
+    if (!sessionToken) {
+      this.errorMessage = 'Please request a new verification code.';
+      this.render();
+      return;
+    }
+
     this.isLoading = true;
     this.errorMessage = '';
     this.render();
@@ -782,16 +920,16 @@ window.AAVIN_COMPONENTS.Auth = {
         body: JSON.stringify({
           email: email,
           otp: otp,
-          sessionToken: this.otpSessionToken || ''
+          sessionToken: sessionToken
         })
       });
       const data = await res.json();
       this.isLoading = false;
 
-      if (data && (data.success || data.verified)) {
+      if (res.ok && data && (data.success || data.verified)) {
         if (this.otpInterval) clearInterval(this.otpInterval);
         this.isEmailVerified = true;
-        this.verificationToken = data.verificationToken || '';
+        this.saveVerificationToken(email, data.verificationToken || '');
         this.successMessage = 'Email verified successfully! Proceed to personal details.';
         this.registerStep = 2;
         this.errorMessage = '';
@@ -946,7 +1084,7 @@ window.AAVIN_COMPONENTS.Auth = {
             ${this.isOtpSent && !this.isEmailVerified ? `
               <button 
                 type="button" 
-                onclick="window.AAVIN_COMPONENTS.Auth.isOtpSent = false; if(window.AAVIN_COMPONENTS.Auth.otpInterval) clearInterval(window.AAVIN_COMPONENTS.Auth.otpInterval); window.AAVIN_COMPONENTS.Auth.render();" 
+                onclick="window.AAVIN_COMPONENTS.Auth.clearOtpSession(); if(window.AAVIN_COMPONENTS.Auth.otpInterval) clearInterval(window.AAVIN_COMPONENTS.Auth.otpInterval); window.AAVIN_COMPONENTS.Auth.render();" 
                 style="background: none; border: none; color: var(--aavin-primary); font-size: 11px; font-weight: 700; cursor: pointer; text-decoration: underline;"
               >
                 Change Email
@@ -961,7 +1099,7 @@ window.AAVIN_COMPONENTS.Auth = {
               placeholder="member@example.com" 
               ${(this.isOtpSent && isCooldownActive) || this.isEmailVerified ? 'disabled' : ''}
               style="flex: 1; min-width: 180px; padding: 10px 12px; border-radius: 8px; border: 1.5px solid var(--border-strong); font-size: 13.5px; outline: none;" 
-              oninput="window.AAVIN_COMPONENTS.Auth.registrationDraft.email = this.value.trim().toLowerCase();"
+              oninput="if(window.AAVIN_COMPONENTS.Auth.registrationDraft.email !== this.value.trim().toLowerCase()){ window.AAVIN_COMPONENTS.Auth.clearOtpSession(); } window.AAVIN_COMPONENTS.Auth.registrationDraft.email = this.value.trim().toLowerCase();"
               onkeydown="if(event.key==='Enter'){ event.preventDefault(); window.AAVIN_COMPONENTS.Auth.sendEmailOtp(); }"
             />
             <button 
@@ -1555,7 +1693,7 @@ window.AAVIN_COMPONENTS.Auth = {
       const payload = {
         email: this.registrationDraft.email,
         password: this.registrationDraft.password,
-        otpVerificationToken: this.verificationToken || '',
+        otpVerificationToken: this.getVerificationToken(this.registrationDraft.email) || this.verificationToken || '',
         full_name: this.registrationDraft.fullName_en,
         full_name_ta: this.registrationDraft.fullName_ta,
         phone: this.registrationDraft.phone,
@@ -1682,6 +1820,7 @@ window.AAVIN_COMPONENTS.Auth = {
   },
 
   finishLogin(user) {
+    this.clearOtpSession();
     this.currentFlow = 'home';
     const header = document.querySelector('.app-header');
     const bottomNav = document.getElementById('mobileBottomNav');

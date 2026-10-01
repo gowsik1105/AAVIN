@@ -562,86 +562,36 @@ try {
                     continue
                 }
 
-                # 1. Primary: Stateless HMAC token validation
-                if (-not [string]::IsNullOrWhiteSpace($sessionToken)) {
-                    $testRes = Test-AavinOtpSessionToken $email $phone $code $sessionToken
-                    if (-not $testRes.Valid) {
-                        Send-JsonResponse $response 400 @{
-                            success = $false
-                            error = $testRes.Error
-                            message = $testRes.Message
-                        }
-                        continue
-                    }
-
-                    $verificationToken = New-AavinVerificationToken $testRes.Email $testRes.Phone
-                    Write-Host "[AAVIN OTP GATEWAY] Account $targetKey verified via HMAC." -ForegroundColor Cyan
-
-                    Send-JsonResponse $response 200 @{
-                        success = $true
-                        email = $testRes.Email
-                        phone = $testRes.Phone
-                        verified = $true
-                        verificationToken = $verificationToken
-                        message = "Email verified successfully! Proceed to personal details."
-                    }
-                    continue
-                }
-
-                # 2. Secondary fallback: in-memory store
-                if (-not $Global:OTP_STORE.ContainsKey($targetKey)) {
-                    Send-JsonResponse $response 400 @{ success = $false; error = "NO_OTP_SENT"; message = "No active OTP request found for this account. Please click Resend Code." }
-                    continue
-                }
-
-                $entry = $Global:OTP_STORE[$targetKey]
-
-                if ([DateTime]::UtcNow -gt $entry.expiresAt) {
-                    $Global:OTP_STORE.Remove($targetKey)
-                    Send-JsonResponse $response 400 @{ success = $false; error = "EXPIRED_OTP"; message = "Verification code has expired. Please request a new code." }
-                    continue
-                }
-
-                if ($entry.attempts -ge 5) {
-                    $Global:OTP_STORE.Remove($targetKey)
-                    Send-JsonResponse $response 400 @{ success = $false; error = "MAX_ATTEMPTS"; message = "Too many incorrect attempts. Please request a fresh code." }
-                    continue
-                }
-
-                # Verify SHA-256 hash of entered code
-                $sha = [System.Security.Cryptography.SHA256]::Create()
-                $inputHashBytes = $sha.ComputeHash([System.Text.Encoding]::UTF8.GetBytes($code))
-                $hashedInput = [System.BitConverter]::ToString($inputHashBytes).Replace("-", "").ToLower()
-
-                if ($entry.hashedOtp -ne $hashedInput) {
-                    $entry.attempts++
-                    $remaining = 5 - $entry.attempts
+                if ([string]::IsNullOrWhiteSpace($sessionToken)) {
                     Send-JsonResponse $response 400 @{
                         success = $false
-                        error = "WRONG_OTP"
-                        message = "Incorrect verification code. $remaining attempt(s) remaining."
+                        error = "NO_OTP_SENT"
+                        message = "No active OTP request found for this account. Please click Resend Code."
                     }
                     continue
                 }
 
-                $verificationToken = New-AavinVerificationToken $email $phone
-                $Global:OTP_STORE.Remove($targetKey)
-                $Global:VERIFIED_TOKENS[$verificationToken] = @{
-                    email = $email
-                    phone = $phone
-                    createdAt = [DateTime]::UtcNow
-                    expiresAt = [DateTime]::UtcNow.AddMinutes(30)
+                # Stateless HMAC token validation
+                $testRes = Test-AavinOtpSessionToken $email $phone $code $sessionToken
+                if (-not $testRes.Valid) {
+                    Send-JsonResponse $response 400 @{
+                        success = $false
+                        error = $testRes.Error
+                        message = $testRes.Message
+                    }
+                    continue
                 }
 
-                Write-Host "[AAVIN OTP GATEWAY] Account $targetKey successfully verified." -ForegroundColor Cyan
+                $verificationToken = New-AavinVerificationToken $testRes.Email $testRes.Phone
+                Write-Host "[AAVIN OTP GATEWAY] Account $targetKey verified via HMAC." -ForegroundColor Cyan
 
                 Send-JsonResponse $response 200 @{
                     success = $true
-                    email = $email
-                    phone = $phone
+                    email = $testRes.Email
+                    phone = $testRes.Phone
                     verified = $true
                     verificationToken = $verificationToken
-                    message = "Account verified successfully."
+                    message = "Email verified successfully! Proceed to personal details."
                 }
                 continue
             }

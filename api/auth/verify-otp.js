@@ -72,8 +72,6 @@ function generateVerificationToken(target) {
   return `${payloadB64}.${sig}`;
 }
 
-const memoryOtpStore = global._aavinOtpStore || (global._aavinOtpStore = new Map());
-
 module.exports = async function handler(req, res) {
   // Set CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -104,32 +102,7 @@ module.exports = async function handler(req, res) {
       return res.status(400).json({ success: false, error: 'INVALID_CODE', message: 'Please enter the complete 6-digit verification code.' });
     }
 
-    // 1. Primary: Stateless HMAC verification (Vercel Serverless & Distributed)
-    if (sessionToken) {
-      const hmacResult = verifyOtpWithHmac({ email, phone }, code, sessionToken);
-      if (!hmacResult.valid) {
-        return res.status(400).json({
-          success: false,
-          error: hmacResult.error,
-          message: hmacResult.message
-        });
-      }
-
-      const verificationToken = generateVerificationToken({ email: hmacResult.email, phone: hmacResult.phone });
-
-      return res.status(200).json({
-        success: true,
-        email: hmacResult.email,
-        phone: hmacResult.phone,
-        verified: true,
-        verificationToken: verificationToken,
-        message: 'Email verified successfully! Proceed to personal details.'
-      });
-    }
-
-    // 2. Secondary fallback: In-memory store (Localhost / single-container dev fallback)
-    const entry = memoryOtpStore.get(targetKey);
-    if (!entry) {
+    if (!sessionToken) {
       return res.status(400).json({
         success: false,
         error: 'NO_OTP_SENT',
@@ -137,38 +110,25 @@ module.exports = async function handler(req, res) {
       });
     }
 
-    if (Date.now() > entry.expiresAt) {
-      memoryOtpStore.delete(targetKey);
-      return res.status(400).json({ success: false, error: 'EXPIRED_OTP', message: 'Verification code has expired. Please request a new code.' });
-    }
-
-    if (entry.attempts >= 5) {
-      memoryOtpStore.delete(targetKey);
-      return res.status(400).json({ success: false, error: 'MAX_ATTEMPTS', message: 'Too many incorrect attempts. Please request a fresh code.' });
-    }
-
-    const inputHash = crypto.createHash('sha256').update(code).digest('hex');
-
-    if (entry.hashedOtp !== inputHash) {
-      entry.attempts += 1;
-      const remaining = 5 - entry.attempts;
+    // Stateless HMAC verification (Vercel Serverless & Distributed)
+    const hmacResult = verifyOtpWithHmac({ email, phone }, code, sessionToken);
+    if (!hmacResult.valid) {
       return res.status(400).json({
         success: false,
-        error: 'WRONG_OTP',
-        message: `Incorrect verification code. ${remaining} attempt(s) remaining.`
+        error: hmacResult.error,
+        message: hmacResult.message
       });
     }
 
-    memoryOtpStore.delete(targetKey);
-    const verificationToken = generateVerificationToken({ email, phone });
+    const verificationToken = generateVerificationToken({ email: hmacResult.email, phone: hmacResult.phone });
 
     return res.status(200).json({
       success: true,
-      email: email,
-      phone: phone,
+      email: hmacResult.email,
+      phone: hmacResult.phone,
       verified: true,
       verificationToken: verificationToken,
-      message: 'Account verified successfully.'
+      message: 'Email verified successfully! Proceed to personal details.'
     });
   } catch (err) {
     return res.status(500).json({ success: false, error: 'SERVER_ERROR', message: 'Internal server error verifying OTP.' });
