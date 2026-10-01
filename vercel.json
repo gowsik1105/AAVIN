@@ -1,15 +1,6 @@
 {
   "version": 2,
-  "rewrites": [
-    {
-      "source": "/api/config.js",
-      "destination": "/api/config.js"
-    },
-    {
-      "source": "/api/:match*",
-      "destination": "/api/:match*"
-    }
-  ],
+  "cleanUrls": true,
   "headers": [
     {
       "source": "/(.*)",
