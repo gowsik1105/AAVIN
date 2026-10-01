@@ -318,7 +318,7 @@ function validateVerificationToken(token, expectedEmail) {
     // 4. Supabase Environment Configuration (Strict Server-Side Admin API)
     const supabaseUrl = (process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || 'https://wmspmyhwsdefvvhwigav.supabase.co').replace(/\/+$/, '');
     const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || 'sb_publishable_IKBhtnA1pyeEKD_sVUQ0ug_0q2Aso5t';
-    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SERVICE_ROLE_KEY || '';
+    const supabaseServiceKey = (process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_ADMIN_KEY || process.env.VITE_SUPABASE_SERVICE_ROLE_KEY || '').trim();
 
     // 5. Existing User Duplicate Check in Database
     try {
