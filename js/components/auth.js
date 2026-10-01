@@ -1296,11 +1296,18 @@ window.AAVIN_COMPONENTS.Auth = {
         </div>
 
         <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-          <button type="button" class="btn btn-secondary" onclick="window.AAVIN_COMPONENTS.Auth.registerStep=2; window.AAVIN_COMPONENTS.Auth.render();" ${this.isLoading ? 'disabled' : ''}>
+          <button type="button" class="btn btn-secondary" onclick="window.AAVIN_COMPONENTS.Auth.registerStep=2; window.AAVIN_COMPONENTS.Auth.render();" ${this.isLoading || this.isSubmittingReg ? 'disabled' : ''}>
             ← Back
           </button>
-          <button type="button" id="btnSubmitRegistration" class="btn btn-success" style="flex: 1; min-width: 200px; font-weight: 800;" onclick="window.AAVIN_COMPONENTS.Auth.saveStep3AndSubmit()" ${this.isLoading ? 'disabled' : ''}>
-            ${this.isLoading ? 'Registering with Supabase...' : '✓ Complete Registration (பதிவை முடிக்கவும்)'}
+          <button 
+            type="button" 
+            id="btnSubmitRegistration" 
+            class="btn btn-success" 
+            style="flex: 1; min-width: 200px; font-weight: 800;" 
+            onclick="event.preventDefault(); event.stopPropagation(); window.AAVIN_COMPONENTS.Auth.saveStep3AndSubmit();" 
+            ${this.isLoading || this.isSubmittingReg ? 'disabled' : ''}
+          >
+            ${this.isLoading || this.isSubmittingReg ? 'Registering with Supabase...' : '✓ Complete Registration (பதிவை முடிக்கவும்)'}
           </button>
         </div>
       `;
@@ -1418,6 +1425,12 @@ window.AAVIN_COMPONENTS.Auth = {
   },
 
   saveStep3AndSubmit() {
+    // Immediate synchronous lock against double clicks
+    if (this.isSubmittingReg || this.isLoading) {
+      console.warn('[AAVIN REGISTRATION] Submission already in progress, blocking duplicate invocation.');
+      return;
+    }
+
     if (!this.isEmailVerified) {
       this.registerStep = 1;
       this.errorMessage = 'Please complete email OTP verification first.';
@@ -1473,6 +1486,13 @@ window.AAVIN_COMPONENTS.Auth = {
       pincode: pin
     };
 
+    // Lock UI immediately in DOM
+    const submitBtn = document.getElementById('btnSubmitRegistration');
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Registering with Supabase...';
+    }
+
     this.submitRegistration();
   },
 
@@ -1503,11 +1523,13 @@ window.AAVIN_COMPONENTS.Auth = {
     if (!this.isEmailVerified) {
       this.registerStep = 1;
       this.errorMessage = 'Please complete email OTP verification first.';
+      this.isSubmittingReg = false;
+      this.isLoading = false;
       this.render();
       return;
     }
 
-    if (this.isSubmittingReg || this.isLoading) {
+    if (this.isSubmittingReg && this.isLoading) {
       console.warn('[AAVIN REGISTRATION] Registration submission already in progress, blocking duplicate request.');
       return;
     }
@@ -1568,7 +1590,7 @@ window.AAVIN_COMPONENTS.Auth = {
           console.warn('[AAVIN REGISTRATION] [429 DETECTED] Server returned 429 Rate Limit.');
           this.isSubmittingReg = false;
           this.isLoading = false;
-          this.errorMessage = regApiData?.message || 'Registration rate limit reached. Please wait a moment before trying again.';
+          this.errorMessage = regApiData?.message || 'Too many registration attempts. Please wait a moment and try again.';
           this.render();
           return;
         }

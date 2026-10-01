@@ -10,6 +10,56 @@ $ALLOWED_FACILITIES = @('MAIN_DAIRY', 'FEEDER_BALANCING_DAIRY', 'DAIRY_PLANT', '
 # In-memory OTP storage for demo/session validation
 $Global:OTP_STORE = @{}
 $Global:VERIFIED_TOKENS = @{}
+$Global:REG_RATE_LIMITS = @{}
+
+function Test-RegistrationRateLimit([string]$ip, [string]$email) {
+    $now = [DateTime]::UtcNow
+    $isLocal = ($ip -eq "127.0.0.1" -or $ip -eq "::1" -or $ip -eq "localhost" -or [string]::IsNullOrWhiteSpace($ip))
+    $windowSec = if ($isLocal) { 60 } else { 600 }
+    $maxAttempts = if ($isLocal) { 10 } else { 5 }
+
+    # Prune expired entries
+    $keysToClean = @($Global:REG_RATE_LIMITS.Keys)
+    foreach ($k in $keysToClean) {
+        $entry = $Global:REG_RATE_LIMITS[$k]
+        if ($entry -and $entry.timestamps) {
+            $entry.timestamps = @($entry.timestamps | Where-Object { ($now - $_).TotalSeconds -lt $windowSec })
+            if ($entry.timestamps.Count -eq 0) {
+                $Global:REG_RATE_LIMITS.Remove($k)
+            }
+        }
+    }
+
+    $checkKeys = @("ip:$ip", "email:$email")
+    foreach ($k in $checkKeys) {
+        if ($Global:REG_RATE_LIMITS.ContainsKey($k)) {
+            $entry = $Global:REG_RATE_LIMITS[$k]
+            if ($entry.timestamps.Count -gt 0) {
+                $lastTs = $entry.timestamps[$entry.timestamps.Count - 1]
+                if (($now - $lastTs).TotalMilliseconds -lt 800) {
+                    return @{ Allowed = $false; IsDuplicate = $true; Message = "A registration request is already processing. Please wait a moment." }
+                }
+            }
+            if ($entry.timestamps.Count -ge $maxAttempts) {
+                $oldest = $entry.timestamps[0]
+                $waitLeft = [Math]::Ceiling($windowSec - ($now - $oldest).TotalSeconds)
+                return @{ Allowed = $false; IsDuplicate = $false; WaitSeconds = [Math]::Max($waitLeft, 1); Message = "Too many registration attempts. Please wait a moment and try again." }
+            }
+        }
+    }
+    return @{ Allowed = $true; IsDuplicate = $false }
+}
+
+function Record-RegistrationAttempt([string]$ip, [string]$email) {
+    $now = [DateTime]::UtcNow
+    $checkKeys = @("ip:$ip", "email:$email")
+    foreach ($k in $checkKeys) {
+        if (-not $Global:REG_RATE_LIMITS.ContainsKey($k)) {
+            $Global:REG_RATE_LIMITS[$k] = @{ timestamps = @() }
+        }
+        $Global:REG_RATE_LIMITS[$k].timestamps += $now
+    }
+}
 
 function Get-HaversineKm([double]$lat1, [double]$lon1, [double]$lat2, [double]$lon2) {
     try {
@@ -440,6 +490,9 @@ try {
             # REST API: /api/auth/register-member (Secure Server-Side Registration Gateway)
             # -------------------------------------------------------------
             if ($urlPath -eq "api/auth/register-member" -and $method -eq "POST") {
+                $requestId = [System.Guid]::NewGuid().ToString()
+                $clientIp = if ($request.RemoteEndPoint -and $request.RemoteEndPoint.Address) { $request.RemoteEndPoint.Address.ToString() } else { "127.0.0.1" }
+                $ts = (Get-Date).ToString("yyyy-MM-ddTHH:mm:ssZ")
                 $body = Get-RequestBodyJson $request
                 $email = if ($body.email) { $body.email.Trim().ToLower() } else { '' }
                 $rawPassword = if ($body.password) { [string]$body.password } else { '' }
@@ -454,31 +507,33 @@ try {
                 $occupation = if ($body.occupation) { $body.occupation.Trim() } else { 'Farmer' }
                 $sangamRole = if ($body.sangam_role) { $body.sangam_role.Trim() } elseif ($body.sangamRole) { $body.sangamRole.Trim() } else { 'Member' }
                 $avatarUrl = if ($body.profile_photo) { $body.profile_photo.Trim() } elseif ($body.avatarUrl) { $body.avatarUrl.Trim() } else { 'assets/logo.jpg' }
+                $masked = Get-MaskedEmail $email
 
-                # 1. Validation
+                # 1. Validation (Does NOT consume rate limit quota)
                 if ([string]::IsNullOrWhiteSpace($email) -or -not ($email -match "^[^\s@]+@[^\s@]+\.[^\s@]+$")) {
-                    Send-JsonResponse $response 400 @{ success = $false; error = "INVALID_EMAIL"; message = "Please provide a valid email address." }
+                    Send-JsonResponse $response 400 @{ success = $false; error = "INVALID_EMAIL"; message = "Please provide a valid email address."; requestId = $requestId }
                     continue
                 }
                 if ([string]::IsNullOrWhiteSpace($rawPassword) -or $rawPassword.Length -lt 6) {
-                    Send-JsonResponse $response 400 @{ success = $false; error = "INVALID_PASSWORD"; message = "Password must be at least 6 characters long." }
+                    Send-JsonResponse $response 400 @{ success = $false; error = "INVALID_PASSWORD"; message = "Password must be at least 6 characters long."; requestId = $requestId }
                     continue
                 }
                 if ([string]::IsNullOrWhiteSpace($fullName)) {
-                    Send-JsonResponse $response 400 @{ success = $false; error = "MISSING_NAME"; message = "Full name in English is required." }
+                    Send-JsonResponse $response 400 @{ success = $false; error = "MISSING_NAME"; message = "Full name in English is required."; requestId = $requestId }
                     continue
                 }
                 if ([string]::IsNullOrWhiteSpace($phone) -or $phone.Length -ne 10) {
-                    Send-JsonResponse $response 400 @{ success = $false; error = "INVALID_PHONE"; message = "Please provide a valid 10-digit mobile number." }
+                    Send-JsonResponse $response 400 @{ success = $false; error = "INVALID_PHONE"; message = "Please provide a valid 10-digit mobile number."; requestId = $requestId }
                     continue
                 }
 
-                # 2. Token Security Validation
+                # 2. Token Security Validation (Do NOT delete token before success)
                 if ([string]::IsNullOrWhiteSpace($token) -or -not $Global:VERIFIED_TOKENS.ContainsKey($token)) {
                     Send-JsonResponse $response 403 @{
                         success = $false
                         error = "INVALID_OR_EXPIRED_TOKEN"
                         message = "Email verification token is missing or expired. Please complete Email OTP verification first."
+                        requestId = $requestId
                     }
                     continue
                 }
@@ -490,14 +545,30 @@ try {
                         success = $false
                         error = "TOKEN_MISMATCH_OR_EXPIRED"
                         message = "Email verification token is invalid or has expired. Please verify your email again."
+                        requestId = $requestId
                     }
                     continue
                 }
 
-                # Immediately consume token
-                $Global:VERIFIED_TOKENS.Remove($token)
+                # 3. Application-Level Rate Limiter Check
+                $rateCheck = Test-RegistrationRateLimit $clientIp $email
+                if (-not $rateCheck.Allowed) {
+                    Write-Host "[AAVIN REGISTRATION] [$ts] [$requestId] IP: $clientIp | To: $masked | RateLimit: BLOCKED (429) | Dup: $($rateCheck.IsDuplicate)" -ForegroundColor Yellow
+                    Send-JsonResponse $response 429 @{
+                        success = $false
+                        error = "RATE_LIMITED"
+                        message = $rateCheck.Message
+                        retryAfter = $rateCheck.WaitSeconds
+                        requestId = $requestId
+                    }
+                    continue
+                }
 
-                # 3. Environment Config
+                # Record valid attempt in rate limiter
+                Record-RegistrationAttempt $clientIp $email
+                Write-Host "[AAVIN REGISTRATION] [$ts] [$requestId] IP: $clientIp | To: $masked | RateLimit: ALLOWED | Status: START" -ForegroundColor Green
+
+                # 4. Environment Config
                 $envFile = Join-Path $path ".env"
                 $supUrl = "https://wmspmyhwsdefvvhwigav.supabase.co"
                 $supKey = "sb_publishable_IKBhtnA1pyeEKD_sVUQ0ug_0q2Aso5t"
@@ -516,152 +587,142 @@ try {
                 $supUrl = $supUrl.Trim().TrimEnd('/')
                 if ($supUrl.EndsWith("/rest/v1")) { $supUrl = $supUrl.Substring(0, $supUrl.Length - 8).TrimEnd('/') }
 
-                # 4. Duplicate Check
+                # 5. Duplicate Check in Database
                 try {
                     $chkUri = "$supUrl/rest/v1/profiles?email=eq.$([System.Uri]::EscapeDataString($email))&select=id,email&limit=1"
-                    $chkHeaders = @{ "apikey" = $supKey; "Authorization" = "Bearer $supKey" }
+                    $chkHeaders = @{ "apikey" = $supKey; "Authorization" = "Bearer $(if ($supServiceKey) { $supServiceKey } else { $supKey })" }
                     $chkRes = Invoke-RestMethod -Uri $chkUri -Method GET -Headers $chkHeaders -TimeoutSec 5 -ErrorAction SilentlyContinue
                     if ($chkRes -and $chkRes.Count -gt 0) {
+                        Write-Host "[AAVIN REGISTRATION] [$requestId] User already exists in public.profiles: $masked" -ForegroundColor Yellow
                         Send-JsonResponse $response 409 @{
                             success = $false
                             error = "USER_ALREADY_EXISTS"
                             message = "An account with this email address is already registered. Please log in."
+                            requestId = $requestId
                         }
                         continue
                     }
                 } catch {}
 
-                # 5. Create Supabase Auth User
+                # 6. Enforce Server-Side Supabase Admin API User Creation
+                if ([string]::IsNullOrWhiteSpace($supServiceKey)) {
+                    Write-Host "[AAVIN REGISTRATION] [$requestId] SERVER_CONFIG_ERROR: SUPABASE_SERVICE_ROLE_KEY is required on server." -ForegroundColor Red
+                    Send-JsonResponse $response 500 @{
+                        success = $false
+                        error = "SERVER_CONFIG_ERROR"
+                        message = "Server configuration error: SUPABASE_SERVICE_ROLE_KEY is required on the server to complete admin registration."
+                        requestId = $requestId
+                    }
+                    continue
+                }
+
+                # Admin creation with email_confirm: true (GoTrue sends 0 emails, bypassing mailer rate limits)
                 $createdUid = $null
                 $creationError = $null
+                $statusCode = 200
 
-                if (-not [string]::IsNullOrWhiteSpace($supServiceKey)) {
-                    # Admin creation with email_confirm: true (GoTrue sends 0 emails)
-                    try {
-                        $adminReqUri = "$supUrl/auth/v1/admin/users"
-                        $adminHeaders = @{
-                            "apikey" = $supServiceKey
-                            "Authorization" = "Bearer $supServiceKey"
-                            "Content-Type" = "application/json"
-                        }
-                        $adminPayload = @{
-                            email = $email
-                            password = $rawPassword
-                            email_confirm = $true
-                            user_metadata = @{
-                                full_name = $fullName
-                                full_name_ta = $fullNameTa
-                                phone = $phone
-                                district_code = $districtCode
-                                district_name = $districtName
-                                sangam_id = $sangamId
-                                sangam_name = $sangamName
-                                sangam_role = $sangamRole
-                                occupation = $occupation
-                                avatar_url = $avatarUrl
-                                role = "user"
-                            }
-                        } | ConvertTo-Json -Depth 5
-                        $adminRes = Invoke-RestMethod -Uri $adminReqUri -Method POST -Headers $adminHeaders -Body $adminPayload -TimeoutSec 10 -ErrorAction Stop
-                        $createdUid = if ($adminRes.id) { $adminRes.id } elseif ($adminRes.user) { $adminRes.user.id } else { $null }
-                    } catch {
-                        $creationError = $_.Exception.Message
-                        $statusCode = 400
-                        if ($_.Exception.Response) {
-                            try {
-                                $statusCode = [int]$_.Exception.Response.StatusCode
-                                $stream = $_.Exception.Response.GetResponseStream()
-                                if ($stream) {
-                                    $reader = New-Object System.IO.StreamReader($stream)
-                                    $rawErr = $reader.ReadToEnd()
-                                    $errObj = $rawErr | ConvertFrom-Json
-                                    if ($errObj.msg) { $creationError = $errObj.msg }
-                                    elseif ($errObj.message) { $creationError = $errObj.message }
-                                    elseif ($errObj.error_description) { $creationError = $errObj.error_description }
-                                }
-                            } catch {}
-                        }
+                try {
+                    $adminReqUri = "$supUrl/auth/v1/admin/users"
+                    $adminHeaders = @{
+                        "apikey" = $supServiceKey
+                        "Authorization" = "Bearer $supServiceKey"
+                        "Content-Type" = "application/json"
                     }
-                } else {
-                    # Standard SignUp
-                    try {
-                        $signupUri = "$supUrl/auth/v1/signup"
-                        $signupHeaders = @{
-                            "apikey" = $supKey
-                            "Content-Type" = "application/json"
+                    $adminPayload = @{
+                        email = $email
+                        password = $rawPassword
+                        email_confirm = $true
+                        user_metadata = @{
+                            full_name = $fullName
+                            full_name_ta = $fullNameTa
+                            phone = $phone
+                            district_code = $districtCode
+                            district_name = $districtName
+                            sangam_id = $sangamId
+                            sangam_name = $sangamName
+                            sangam_role = $sangamRole
+                            occupation = $occupation
+                            avatar_url = $avatarUrl
+                            role = "user"
                         }
-                        $signupPayload = @{
-                            email = $email
-                            password = $rawPassword
-                            data = @{
-                                full_name = $fullName
-                                full_name_ta = $fullNameTa
-                                phone = $phone
-                                district_code = $districtCode
-                                district_name = $districtName
-                                sangam_role = $sangamRole
-                                occupation = $occupation
-                                avatar_url = $avatarUrl
-                                role = "user"
+                    } | ConvertTo-Json -Depth 5
+                    $adminRes = Invoke-RestMethod -Uri $adminReqUri -Method POST -Headers $adminHeaders -Body $adminPayload -TimeoutSec 10 -ErrorAction Stop
+                    $createdUid = if ($adminRes.id) { $adminRes.id } elseif ($adminRes.user) { $adminRes.user.id } else { $null }
+                } catch {
+                    $creationError = $_.Exception.Message
+                    $statusCode = 500
+                    if ($_.Exception.Response) {
+                        try {
+                            $statusCode = [int]$_.Exception.Response.StatusCode
+                            $stream = $_.Exception.Response.GetResponseStream()
+                            if ($stream) {
+                                $reader = New-Object System.IO.StreamReader($stream)
+                                $rawErr = $reader.ReadToEnd()
+                                $errObj = $rawErr | ConvertFrom-Json
+                                if ($errObj.msg) { $creationError = $errObj.msg }
+                                elseif ($errObj.message) { $creationError = $errObj.message }
+                                elseif ($errObj.error_description) { $creationError = $errObj.error_description }
                             }
-                        } | ConvertTo-Json -Depth 5
-                        $signupRes = Invoke-RestMethod -Uri $signupUri -Method POST -Headers $signupHeaders -Body $signupPayload -TimeoutSec 10 -ErrorAction Stop
-                        $createdUid = if ($signupRes.id) { $signupRes.id } elseif ($signupRes.user) { $signupRes.user.id } else { $null }
-                    } catch {
-                        $creationError = $_.Exception.Message
-                        $statusCode = 400
-                        if ($_.Exception.Response) {
-                            try {
-                                $statusCode = [int]$_.Exception.Response.StatusCode
-                                $stream = $_.Exception.Response.GetResponseStream()
-                                if ($stream) {
-                                    $reader = New-Object System.IO.StreamReader($stream)
-                                    $rawErr = $reader.ReadToEnd()
-                                    $errObj = $rawErr | ConvertFrom-Json
-                                    if ($errObj.msg) { $creationError = $errObj.msg }
-                                    elseif ($errObj.message) { $creationError = $errObj.message }
-                                    elseif ($errObj.error_description) { $creationError = $errObj.error_description }
-                                }
-                            } catch {}
-                        }
+                        } catch {}
                     }
                 }
 
                 if ([string]::IsNullOrWhiteSpace($createdUid)) {
-                    $isRateLimit = ($statusCode -eq 429) -or ($creationError -match "429") -or ($creationError -match "Too Many Requests") -or ($creationError -match "rate limit") -or ($creationError -match "security purposes")
                     $isAlreadyExists = ($statusCode -eq 422) -or ($creationError -match "already registered") -or ($creationError -match "already exists") -or ($creationError -match "User already registered")
-
-                    if ($isRateLimit) {
-                        Write-Host "[AAVIN REGISTRATION] [429 DETECTED] Supabase Auth Rate Limit for: $email" -ForegroundColor Yellow
-                        Send-JsonResponse $response 429 @{
-                            success = $false
-                            error = "RATE_LIMITED"
-                            message = "Registration rate limit reached. Please wait a moment before trying again."
-                            retryAfter = 60
-                        }
-                        continue
-                    }
 
                     if ($isAlreadyExists) {
                         Send-JsonResponse $response 409 @{
                             success = $false
                             error = "USER_ALREADY_EXISTS"
                             message = "An account with this email address is already registered. Please log in."
+                            requestId = $requestId
                         }
                         continue
                     }
 
-                    Send-JsonResponse $response 400 @{
+                    Send-JsonResponse $response $statusCode @{
                         success = $false
                         error = "AUTH_CREATION_FAILED"
                         message = if ($creationError) { $creationError } else { "Failed to create authentication user in Supabase." }
+                        requestId = $requestId
                     }
                     continue
                 }
 
-                $memberId = "TN-$districtCode-2026-$($createdUid.Substring(0, 4))"
+                # 7. Sync/Ensure Profile Record in public.profiles Table
+                try {
+                    $profReqUri = "$supUrl/rest/v1/profiles"
+                    $profHeaders = @{
+                        "apikey" = $supServiceKey
+                        "Authorization" = "Bearer $supServiceKey"
+                        "Content-Type" = "application/json"
+                        "Prefer" = "resolution=merge-duplicates"
+                    }
+                    $profPayload = @{
+                        id = $createdUid
+                        email = $email
+                        full_name = $fullName
+                        full_name_ta = $fullNameTa
+                        phone = $phone
+                        district_code = $districtCode
+                        district_name = $districtName
+                        sangam_id = $sangamId
+                        sangam_name = $sangamName
+                        occupation = $occupation
+                        role = "user"
+                        admin_type = $null
+                        is_active = $true
+                    } | ConvertTo-Json -Depth 5
+                    Invoke-RestMethod -Uri $profReqUri -Method POST -Headers $profHeaders -Body $profPayload -TimeoutSec 5 -ErrorAction SilentlyContinue | Out-Null
+                } catch {
+                    Write-Host "[AAVIN REGISTRATION] [$requestId] Profile upsert notice (trigger may have handled): $($_.Exception.Message)" -ForegroundColor Yellow
+                }
 
-                Write-Host "[AAVIN REGISTRATION GATEWAY] Real Member Registered: $email (UID: $createdUid, ID: $memberId)" -ForegroundColor Green
+                # 8. Successfully registered: Consume verification token now
+                $Global:VERIFIED_TOKENS.Remove($token)
+
+                $memberId = "TN-$districtCode-2026-$($createdUid.Substring(0, 4))"
+                Write-Host "[AAVIN REGISTRATION] [$requestId] SUCCESS: Member Registered: $masked (UID: $createdUid, ID: $memberId)" -ForegroundColor Green
 
                 Send-JsonResponse $response 200 @{
                     success = $true
@@ -669,6 +730,7 @@ try {
                     email = $email
                     memberId = $memberId
                     message = "Account registered successfully! Proceeding to authenticated login..."
+                    requestId = $requestId
                 }
                 continue
             }
